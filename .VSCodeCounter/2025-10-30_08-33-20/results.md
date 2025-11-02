@@ -1,0 +1,21 @@
+# Summary
+
+Date : 2025-10-30 08:33:20
+
+Directory c:\\Users\\USUARIO\\OneDrive\\Escritorio\\Semestre 7\\Movil\\mediscan_app\\lib
+
+Total : 1 files,  57 codes, 54 comments, 12 blanks, all 123 lines
+
+Summary / [Details](details.md) / [Diff Summary](diff.md) / [Diff Details](diff-details.md)
+
+## Languages
+| language | files | code | comment | blank | total |
+| :--- | ---: | ---: | ---: | ---: | ---: |
+| Dart | 1 | 57 | 54 | 12 | 123 |
+
+## Directories
+| path | files | code | comment | blank | total |
+| :--- | ---: | ---: | ---: | ---: | ---: |
+| . | 1 | 57 | 54 | 12 | 123 |
+
+Summary / [Details](details.md) / [Diff Summary](diff.md) / [Diff Details](diff-details.md)

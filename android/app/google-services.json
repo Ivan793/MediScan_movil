@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "52198417453",
+    "project_id": "proyectomovil-54f19",
+    "storage_bucket": "proyectomovil-54f19.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:52198417453:android:15e45e443a63177b2604a4",
+        "android_client_info": {
+          "package_name": "com.example.mediscan_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAzi7UtG9TKXvMlHeYnQPNoZHZAOAx5mxE"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
