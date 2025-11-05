@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:mediscan_app/services/usuario_service.dart';
 import 'package:mediscan_app/models/usuario_model.dart';
 import 'package:mediscan_app/ui/home/doctor_independiente_page.dart';
-import 'package:mediscan_app/ui/home/doctor_page.dart';
 import 'package:mediscan_app/ui/home/empresa_page.dart';
 
 class LoginPage extends StatefulWidget {
@@ -14,6 +14,7 @@ class LoginPage extends StatefulWidget {
 
 class _LoginPageState extends State<LoginPage> {
   final UsuarioService _usuarioService = UsuarioService();
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final TextEditingController emailController = TextEditingController();
   final TextEditingController passwordController = TextEditingController();
   bool _isLoading = false;
@@ -31,52 +32,102 @@ class _LoginPageState extends State<LoginPage> {
 
     setState(() => _isLoading = true);
 
-    Usuario? usuario = await _usuarioService.iniciarSesion(correo, contrasenia);
+    try {
+      // 1. Iniciar sesión
+      Usuario? usuario = await _usuarioService.iniciarSesion(correo, contrasenia);
 
-    setState(() => _isLoading = false);
+      if (usuario == null) {
+        throw Exception('Credenciales incorrectas');
+      }
 
-    if (usuario != null) {
-      //  Mensaje en consola para verificar rol
+      // 2. Verificar el rol y obtener información adicional
       print('Usuario logeado: ${usuario.correo}');
       print('Rol detectado: ${usuario.rol}');
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Inicio de sesión exitoso'),
-          backgroundColor: Colors.green,
-        ),
-      );
+      if (usuario.rol.toLowerCase() == 'empresa') {
+        // Redireccionar a dashboard de empresa
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('✅ Bienvenido, Empresa'),
+            backgroundColor: Colors.green,
+          ),
+        );
+        Navigator.pushReplacement(
+          context,
+          MaterialPageRoute(builder: (context) => const CompanyDashboard()),
+        );
+      } else if (usuario.rol.toLowerCase() == 'doctor') {
+        // 🔹 Verificar si el doctor está asociado a una empresa
+        final doctorDoc = await _firestore
+            .collection('doctores')
+            .doc(usuario.id_usuario)
+            .get();
 
-      //  Redirigir según el rol
-      switch (usuario.rol.toLowerCase()) {
-        case 'empresa':
+        if (doctorDoc.exists) {
+          final doctorData = doctorDoc.data()!;
+          final empresaId = doctorData['empresa_id'];
+
+          if (empresaId != null && empresaId.toString().isNotEmpty) {
+            // 🔹 Doctor asociado a empresa
+            final empresaDoc = await _firestore
+                .collection('empresas')
+                .doc(empresaId)
+                .get();
+
+            if (empresaDoc.exists) {
+              final empresaNombre = empresaDoc.data()?['razon_social'] ?? 'su empresa';
+              
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text('✅ Bienvenido Dr./Dra.\nAsociado a: $empresaNombre'),
+                  backgroundColor: Colors.green,
+                  duration: const Duration(seconds: 3),
+                ),
+              );
+            } else {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(
+                  content: Text('✅ Bienvenido Doctor'),
+                  backgroundColor: Colors.green,
+                ),
+              );
+            }
+          } else {
+            // Doctor independiente (sin empresa)
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('✅ Bienvenido Doctor Independiente'),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
+
+          // Redirigir al dashboard de doctor
           Navigator.pushReplacement(
             context,
-            MaterialPageRoute(builder: (context) => const CompanyDashboard()),
+            MaterialPageRoute(
+                builder: (context) => const DoctorIndependientePage()),
           );
-          break;
-        case 'doctor':
-          Navigator.pushReplacement(
-            context,
-            MaterialPageRoute(builder: (context) => const DoctorIndependientePage()),
-          );
-          break;
-        default:
-          print('Rol desconocido recibido: ${usuario.rol}');
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text('Rol de usuario desconocido: ${usuario.rol}'),
-              backgroundColor: Colors.redAccent,
-            ),
-          );
+        } else {
+          // No existe documento de doctor (caso extraño)
+          throw Exception('Perfil de doctor no encontrado');
+        }
+      } else {
+        // Rol desconocido
+        print('Rol desconocido recibido: ${usuario.rol}');
+        throw Exception('Rol de usuario desconocido: ${usuario.rol}');
       }
-    } else {
+    } catch (e) {
+      print('Error en login: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Credenciales incorrectas o usuario no encontrado'),
+        SnackBar(
+          content: Text('❌ Error: ${e.toString()}'),
           backgroundColor: Colors.redAccent,
+          duration: const Duration(seconds: 3),
         ),
       );
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 
