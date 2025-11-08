@@ -352,14 +352,14 @@ class _DoctorIndependientePageState extends State<DoctorIndependientePage> {
               }
             }),
             _botonAccion(Icons.people, "Pacientes", Colors.green, () {
-              // Navegar a la vista de pacientes
+              Navigator.pushNamed(context, '/pacientes');
             }),
             _botonAccion(
               Icons.medical_services,
-              "Servicios",
+              "Análisis",
               Colors.orange,
               () {
-                // Navegar a servicios ofrecidos
+                Navigator.pushNamed(context, '/nuevo-analisis', arguments: _doctorActual);
               },
             ),
           ],
