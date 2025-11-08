@@ -34,7 +34,6 @@ class _DoctorIndependientePageState extends State<DoctorIndependientePage> {
         throw Exception("No hay usuario autenticado");
       }
 
-      // Obtener el doctor usando el ID del usuario
       final docSnapshot = await _firestore
           .collection('doctores')
           .doc(user.uid)
@@ -46,7 +45,6 @@ class _DoctorIndependientePageState extends State<DoctorIndependientePage> {
 
       _doctorActual = Doctor.fromMap(docSnapshot.data()!, docSnapshot.id);
 
-      // 🔹 Si el doctor tiene empresa asociada, cargarla
       if (_doctorActual!.empresaId != null &&
           _doctorActual!.empresaId!.isNotEmpty) {
         final empresaSnapshot = await _firestore
@@ -108,17 +106,18 @@ class _DoctorIndependientePageState extends State<DoctorIndependientePage> {
                     _encabezadoPerfil(),
                     const SizedBox(height: 20),
 
-                    // 🔹 Mostrar empresa asociada si existe
                     if (_empresaAsociada != null) ...[
                       _seccionEmpresaAsociada(),
                       const SizedBox(height: 20),
                     ],
 
+                    // Acciones principales
+                    _accionesPrincipales(),
+                    const SizedBox(height: 20),
+
                     _seccionInfoPersonal(),
                     const SizedBox(height: 20),
                     _seccionInfoProfesional(),
-                    const SizedBox(height: 20),
-                    _accionesRapidas(),
                   ],
                 ),
               ),
@@ -169,7 +168,6 @@ class _DoctorIndependientePageState extends State<DoctorIndependientePage> {
     );
   }
 
-  // 🔹 Nueva sección para mostrar la empresa asociada
   Widget _seccionEmpresaAsociada() {
     return Card(
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
@@ -213,37 +211,116 @@ class _DoctorIndependientePageState extends State<DoctorIndependientePage> {
             _fila("🆔 NIT:", _empresaAsociada!.nit),
             _fila("📞 Teléfono:", _empresaAsociada!.telefono),
             _fila("🌍 Ciudad:", _empresaAsociada!.ciudad),
-            _fila("✉️ Correo:", _empresaAsociada!.correoContacto),
-            const SizedBox(height: 12),
-            Container(
-              padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(
-                color: Colors.blue.shade50,
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.shade200),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _accionesPrincipales() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Padding(
+          padding: EdgeInsets.only(left: 4, bottom: 12),
+          child: Text(
+            "Acciones Rápidas",
+            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+          ),
+        ),
+        Row(
+          children: [
+            Expanded(
+              child: _botonAccionGrande(
+                Icons.people,
+                "Pacientes",
+                Colors.blue,
+                () => Navigator.pushNamed(context, '/pacientes'),
               ),
-              child: Row(
-                children: [
-                  Icon(
-                    Icons.info_outline,
-                    color: Colors.blue.shade700,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      "Usted trabaja para ${_empresaAsociada!.razonSocial}",
-                      style: TextStyle(
-                        color: Colors.blue.shade700,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                      ),
-                    ),
-                  ),
-                ],
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _botonAccionGrande(
+                Icons.medical_services,
+                "Análisis",
+                Colors.orange,
+                () => Navigator.pushNamed(context, '/analisis'),
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 12),
+        SizedBox(
+          width: double.infinity,
+          child: _botonAccionGrande(
+            Icons.edit,
+            "Editar Perfil",
+            Colors.green,
+            () async {
+              if (_doctorActual!.empresaId != null &&
+                  _doctorActual!.empresaId!.isNotEmpty) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(
+                    content: Text(
+                      "Los doctores asociados a una empresa no pueden editar su perfil.",
+                    ),
+                    backgroundColor: Colors.orange,
+                  ),
+                );
+                return;
+              }
+
+              final actualizado = await _mostrarModalEditarDoctor(
+                _doctorActual!,
+              );
+
+              if (actualizado == true) {
+                await _cargarDoctorActual();
+              }
+            },
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _botonAccionGrande(
+    IconData icono,
+    String texto,
+    Color color,
+    VoidCallback onTap,
+  ) {
+    return Card(
+      elevation: 2,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(12),
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: color.withOpacity(0.1),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(icono, color: color, size: 32),
+              ),
+              const SizedBox(height: 12),
+              Text(
+                texto,
+                style: TextStyle(
+                  color: color,
+                  fontWeight: FontWeight.w600,
+                  fontSize: 15,
+                ),
+                textAlign: TextAlign.center,
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -299,101 +376,9 @@ class _DoctorIndependientePageState extends State<DoctorIndependientePage> {
               _doctorActual!.anioGraduacion.toString(),
             ),
             _fila("Especialidades", _doctorActual!.especialidades.join(', ')),
-            const SizedBox(height: 10),
-            const Text(
-              "Archivos cargados:",
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            _archivo(
-              "Tarjeta Profesional",
-              _doctorActual!.archivoTarjetaProfesional,
-            ),
-            _archivo("Título de Grado", _doctorActual!.archivoTituloGrado),
-            _archivo("Registro Rethus", _doctorActual!.archivoRethus),
-            _archivo("Especialidad", _doctorActual!.archivoEspecialidad),
           ],
         ),
       ),
-    );
-  }
-
-  Widget _accionesRapidas() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          "Acciones Rápidas",
-          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-        ),
-        const SizedBox(height: 10),
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceAround,
-          children: [
-            _botonAccion(Icons.edit, "Editar Perfil", Colors.blue, () async {
-              if (_doctorActual!.empresaId != null &&
-                  _doctorActual!.empresaId!.isNotEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      "Los doctores asociados a una empresa no pueden editar su perfil.",
-                    ),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-                return;
-              }
-
-              final actualizado = await _mostrarModalEditarDoctor(
-                _doctorActual!,
-              );
-
-              if (actualizado == true) {
-                await _cargarDoctorActual(); // 🔄 recarga la información después de guardar
-              }
-            }),
-            _botonAccion(Icons.people, "Pacientes", Colors.green, () {
-              Navigator.pushNamed(context, '/pacientes');
-            }),
-            _botonAccion(
-              Icons.medical_services,
-              "Análisis",
-              Colors.orange,
-              () {
-                Navigator.pushNamed(context, '/nuevo-analisis', arguments: _doctorActual);
-              },
-            ),
-          ],
-        ),
-      ],
-    );
-  }
-
-  Widget _botonAccion(
-    IconData icono,
-    String texto,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return Column(
-      children: [
-        InkWell(
-          onTap: onTap,
-          borderRadius: BorderRadius.circular(50),
-          child: Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
-            ),
-            child: Icon(icono, color: color, size: 30),
-          ),
-        ),
-        const SizedBox(height: 5),
-        Text(
-          texto,
-          style: TextStyle(color: color, fontWeight: FontWeight.w600),
-        ),
-      ],
     );
   }
 
@@ -417,16 +402,6 @@ class _DoctorIndependientePageState extends State<DoctorIndependientePage> {
             ),
           ),
         ],
-      ),
-    );
-  }
-
-  Widget _archivo(String label, String? archivo) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: Text(
-        "- $label: ${archivo ?? 'No disponible'}",
-        style: const TextStyle(color: Colors.grey),
       ),
     );
   }
@@ -475,7 +450,6 @@ class _DoctorIndependientePageState extends State<DoctorIndependientePage> {
                         ),
                       ),
                       const SizedBox(height: 20),
-
                       _campoTexto("Teléfono", telefonoController),
                       const SizedBox(height: 16),
                       _campoTexto("Dirección", direccionController),
@@ -484,8 +458,6 @@ class _DoctorIndependientePageState extends State<DoctorIndependientePage> {
                       const SizedBox(height: 16),
                       _campoTexto("País", paisController),
                       const SizedBox(height: 25),
-
-                      // Botón de guardar
                       ElevatedButton.icon(
                         onPressed: guardando
                             ? null
