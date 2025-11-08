@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:mediscan_app/controllers/analisis_controller.dart';
 import 'package:mediscan_app/controllers/paciente_controller.dart';
-import 'package:mediscan_app/models/analisis_model.dart';
 import 'package:mediscan_app/models/paciente_model.dart';
 
 class PacienteDetallePage extends StatefulWidget {
@@ -14,43 +12,54 @@ class PacienteDetallePage extends StatefulWidget {
 }
 
 class _PacienteDetallePageState extends State<PacienteDetallePage> {
-  final AnalisisController _analisisController = AnalisisController();
   final PacienteController _pacienteController = PacienteController();
-  
-  int _selectedTab = 0;
-  List<Analisis> _analisis = [];
-  bool _isLoadingAnalisis = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _cargarAnalisis();
-  }
-
-  Future<void> _cargarAnalisis() async {
-    setState(() => _isLoadingAnalisis = true);
-    try {
-      final analisis = await _analisisController.obtenerAnalisisPaciente(widget.paciente.id!);
-      setState(() {
-        _analisis = analisis;
-        _isLoadingAnalisis = false;
-      });
-    } catch (e) {
-      setState(() => _isLoadingAnalisis = false);
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al cargar análisis: $e')),
-        );
-      }
-    }
-  }
 
   Future<void> _eliminarPaciente() async {
     final confirmar = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Confirmar eliminación'),
-        content: Text('¿Está seguro de eliminar a ${widget.paciente.nombreCompleto}?'),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+        title: Row(
+          children: [
+            Icon(Icons.warning_amber_rounded, color: Colors.orange.shade700, size: 28),
+            const SizedBox(width: 12),
+            const Text('Confirmar eliminación'),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '¿Está seguro de eliminar a ${widget.paciente.nombreCompleto}?',
+              style: const TextStyle(fontSize: 16),
+            ),
+            const SizedBox(height: 12),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: Colors.red.shade50,
+                borderRadius: BorderRadius.circular(8),
+                border: Border.all(color: Colors.red.shade200),
+              ),
+              child: Row(
+                children: [
+                  Icon(Icons.info_outline, size: 20, color: Colors.red.shade700),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      'Esta acción no se puede deshacer',
+                      style: TextStyle(
+                        fontSize: 13,
+                        color: Colors.red.shade700,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ],
+        ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
@@ -58,7 +67,12 @@ class _PacienteDetallePageState extends State<PacienteDetallePage> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            style: ElevatedButton.styleFrom(backgroundColor: Colors.red),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.red,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(8),
+              ),
+            ),
             child: const Text('Eliminar'),
           ),
         ],
@@ -71,13 +85,35 @@ class _PacienteDetallePageState extends State<PacienteDetallePage> {
         if (mounted) {
           Navigator.pop(context, true);
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Paciente eliminado')),
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.check_circle, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Text('${widget.paciente.nombreCompleto} eliminado'),
+                ],
+              ),
+              backgroundColor: Colors.green,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
           );
         }
       } catch (e) {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('Error: $e')),
+            SnackBar(
+              content: Row(
+                children: [
+                  const Icon(Icons.error, color: Colors.white),
+                  const SizedBox(width: 12),
+                  Expanded(child: Text('Error: $e')),
+                ],
+              ),
+              backgroundColor: Colors.red,
+              behavior: SnackBarBehavior.floating,
+              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+            ),
           );
         }
       }
@@ -89,11 +125,12 @@ class _PacienteDetallePageState extends State<PacienteDetallePage> {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: Text(widget.paciente.nombreCompleto),
+        title: const Text('Información del Paciente'),
         backgroundColor: Colors.blue.shade700,
         actions: [
           IconButton(
             icon: const Icon(Icons.edit),
+            tooltip: 'Editar',
             onPressed: () async {
               final resultado = await Navigator.pushNamed(
                 context,
@@ -107,331 +144,332 @@ class _PacienteDetallePageState extends State<PacienteDetallePage> {
           ),
           IconButton(
             icon: const Icon(Icons.delete),
+            tooltip: 'Eliminar',
             onPressed: _eliminarPaciente,
           ),
         ],
       ),
-      floatingActionButton: _selectedTab == 1
-          ? FloatingActionButton.extended(
-              onPressed: () async {
-                final resultado = await Navigator.pushNamed(
-                  context,
-                  '/nuevo-analisis',
-                  arguments: widget.paciente,
-                );
-                if (resultado == true) {
-                  _cargarAnalisis();
-                }
-              },
-              backgroundColor: Colors.blue.shade700,
-              icon: const Icon(Icons.add),
-              label: const Text('Nuevo Análisis'),
-            )
-          : null,
-      body: Column(
-        children: [
-          // Tabs
-          Container(
-            color: Colors.white,
-            child: Row(
-              children: [
-                Expanded(
-                  child: _buildTab('Información', 0),
-                ),
-                Expanded(
-                  child: _buildTab('Análisis', 1),
-                ),
-              ],
-            ),
-          ),
-
-          // Contenido
-          Expanded(
-            child: _selectedTab == 0
-                ? _buildInformacionTab()
-                : _buildAnalisisTab(),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTab(String label, int index) {
-    final isSelected = _selectedTab == index;
-    return InkWell(
-      onTap: () => setState(() => _selectedTab = index),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: 16),
-        decoration: BoxDecoration(
-          border: Border(
-            bottom: BorderSide(
-              color: isSelected ? Colors.blue.shade700 : Colors.transparent,
-              width: 3,
-            ),
-          ),
-        ),
-        child: Text(
-          label,
-          textAlign: TextAlign.center,
-          style: TextStyle(
-            fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
-            color: isSelected ? Colors.blue.shade700 : Colors.grey,
-            fontSize: 16,
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildInformacionTab() {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header con avatar
-          Center(
-            child: Column(
-              children: [
-                CircleAvatar(
-                  radius: 50,
-                  backgroundColor: Colors.blue.shade100,
-                  child: Text(
-                    widget.paciente.nombres[0].toUpperCase() +
-                        widget.paciente.apellidos[0].toUpperCase(),
-                    style: TextStyle(
-                      color: Colors.blue.shade700,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 32,
-                    ),
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  widget.paciente.nombreCompleto,
-                  style: const TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '${widget.paciente.edad} años',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey[600],
-                  ),
-                ),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 24),
-          _buildSeccion('Información Personal'),
-          _buildInfoCard([
-            _buildInfoRow(Icons.badge, 'Documento', 
-                '${widget.paciente.tipoDocumento}: ${widget.paciente.numeroDocumento}'),
-            _buildInfoRow(Icons.cake, 'Fecha de Nacimiento',
-                '${widget.paciente.fechaNacimiento?.day}/${widget.paciente.fechaNacimiento?.month}/${widget.paciente.fechaNacimiento?.year}'),
-            _buildInfoRow(
-                widget.paciente.genero?.toLowerCase() == 'masculino' ? Icons.male : Icons.female,
-                'Género',
-                widget.paciente.genero ?? 'No especificado'),
-          ]),
-
-          const SizedBox(height: 16),
-          _buildSeccion('Contacto'),
-          _buildInfoCard([
-            _buildInfoRow(Icons.phone, 'Teléfono', widget.paciente.telefono),
-            if (widget.paciente.email != null)
-              _buildInfoRow(Icons.email, 'Email', widget.paciente.email!),
-            _buildInfoRow(Icons.home, 'Dirección', widget.paciente.direccion),
-            _buildInfoRow(Icons.location_city, 'Ciudad', widget.paciente.ciudad),
-            _buildInfoRow(Icons.flag, 'País', widget.paciente.pais),
-          ]),
-
-          const SizedBox(height: 16),
-          _buildSeccion('Información Médica'),
-          _buildInfoCard([
-            if (widget.paciente.grupoSanguineo != null)
-              _buildInfoRow(Icons.bloodtype, 'Grupo Sanguíneo', widget.paciente.grupoSanguineo!),
-            if (widget.paciente.alergias != null)
-              _buildInfoRow(Icons.warning_amber, 'Alergias', widget.paciente.alergias!),
-            if (widget.paciente.enfermedadesPrevias != null)
-              _buildInfoRow(Icons.medical_services, 'Enfermedades Previas',
-                  widget.paciente.enfermedadesPrevias!),
-          ]),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildAnalisisTab() {
-    if (_isLoadingAnalisis) {
-      return const Center(child: CircularProgressIndicator());
-    }
-
-    if (_analisis.isEmpty) {
-      return Center(
+      body: SingleChildScrollView(
         child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.medical_services_outlined, size: 80, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            const Text(
-              'No hay análisis registrados',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
+            // Header con información principal
+            Container(
+              width: double.infinity,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [Colors.blue.shade700, Colors.blue.shade500],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                ),
+              ),
+              child: SafeArea(
+                bottom: false,
+                child: Padding(
+                  padding: const EdgeInsets.all(24),
+                  child: Column(
+                    children: [
+                      // Avatar
+                      Container(
+                        padding: const EdgeInsets.all(4),
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          border: Border.all(color: Colors.white, width: 3),
+                        ),
+                        child: CircleAvatar(
+                          radius: 50,
+                          backgroundColor: Colors.white,
+                          child: Text(
+                            widget.paciente.nombres[0].toUpperCase() +
+                                widget.paciente.apellidos[0].toUpperCase(),
+                            style: TextStyle(
+                              color: Colors.blue.shade700,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 36,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      
+                      // Nombre
+                      Text(
+                        widget.paciente.nombreCompleto,
+                        style: const TextStyle(
+                          fontSize: 26,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                      const SizedBox(height: 8),
+                      
+                      // Edad y género
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.2),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Row(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            const Icon(Icons.cake, color: Colors.white, size: 18),
+                            const SizedBox(width: 8),
+                            Text(
+                              '${widget.paciente.edad} años',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            Icon(
+                              widget.paciente.genero?.toLowerCase() == 'masculino'
+                                  ? Icons.male
+                                  : Icons.female,
+                              color: Colors.white,
+                              size: 18,
+                            ),
+                            const SizedBox(width: 8),
+                            Text(
+                              widget.paciente.genero ?? '',
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
-            const SizedBox(height: 8),
-            const Text(
-              'Presiona + para agregar un análisis',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
+
+            // Contenido
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildSeccion('Información Personal', [
+                    _buildInfoCard([
+                      _buildInfoRow(
+                        Icons.badge,
+                        'Documento',
+                        '${widget.paciente.tipoDocumento}: ${widget.paciente.numeroDocumento}',
+                      ),
+                      _buildInfoRow(
+                        Icons.calendar_today,
+                        'Fecha de Nacimiento',
+                        '${widget.paciente.fechaNacimiento?.day}/${widget.paciente.fechaNacimiento?.month}/${widget.paciente.fechaNacimiento?.year}',
+                      ),
+                    ]),
+                  ]),
+
+                  const SizedBox(height: 20),
+                  _buildSeccion('Contacto', [
+                    _buildInfoCard([
+                      _buildInfoRow(Icons.phone, 'Teléfono', widget.paciente.telefono),
+                      if (widget.paciente.email != null)
+                        _buildInfoRow(Icons.email, 'Email', widget.paciente.email!),
+                      _buildInfoRow(Icons.home, 'Dirección', widget.paciente.direccion),
+                      _buildInfoRow(Icons.location_city, 'Ciudad', widget.paciente.ciudad),
+                      _buildInfoRow(Icons.flag, 'País', widget.paciente.pais),
+                    ]),
+                  ]),
+
+                  const SizedBox(height: 20),
+                  _buildSeccion('Información Médica', [
+                    _buildInfoCard([
+                      if (widget.paciente.grupoSanguineo != null)
+                        _buildInfoRow(
+                          Icons.bloodtype,
+                          'Grupo Sanguíneo',
+                          widget.paciente.grupoSanguineo!,
+                        ),
+                      if (widget.paciente.alergias != null)
+                        _buildInfoRow(
+                          Icons.warning_amber,
+                          'Alergias',
+                          widget.paciente.alergias!,
+                        ),
+                      if (widget.paciente.enfermedadesPrevias != null)
+                        _buildInfoRow(
+                          Icons.medical_services,
+                          'Enfermedades Previas',
+                          widget.paciente.enfermedadesPrevias!,
+                        ),
+                      if (widget.paciente.grupoSanguineo == null &&
+                          widget.paciente.alergias == null &&
+                          widget.paciente.enfermedadesPrevias == null)
+                        Padding(
+                          padding: const EdgeInsets.all(16),
+                          child: Center(
+                            child: Text(
+                              'Sin información médica registrada',
+                              style: TextStyle(
+                                color: Colors.grey[600],
+                                fontSize: 14,
+                              ),
+                            ),
+                          ),
+                        ),
+                    ]),
+                  ]),
+
+                  const SizedBox(height: 20),
+                  _buildSeccion('Registro', [
+                    _buildInfoCard([
+                      _buildInfoRow(
+                        Icons.event,
+                        'Fecha de Registro',
+                        '${widget.paciente.fechaRegistro.day}/${widget.paciente.fechaRegistro.month}/${widget.paciente.fechaRegistro.year}',
+                      ),
+                    ]),
+                  ]),
+
+                  const SizedBox(height: 32),
+
+                  // Botones de acción
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton.icon(
+                          onPressed: () async {
+                            final resultado = await Navigator.pushNamed(
+                              context,
+                              '/registrar-paciente',
+                              arguments: widget.paciente,
+                            );
+                            if (resultado == true && mounted) {
+                              setState(() {});
+                            }
+                          },
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            side: BorderSide(color: Colors.blue.shade700, width: 2),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: Icon(Icons.edit, color: Colors.blue.shade700),
+                          label: Text(
+                            'Editar',
+                            style: TextStyle(
+                              color: Colors.blue.shade700,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton.icon(
+                          onPressed: _eliminarPaciente,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.red,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                          ),
+                          icon: const Icon(Icons.delete),
+                          label: const Text(
+                            'Eliminar',
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 20),
+                ],
+              ),
             ),
           ],
         ),
-      );
-    }
-
-    return RefreshIndicator(
-      onRefresh: _cargarAnalisis,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(12),
-        itemCount: _analisis.length,
-        itemBuilder: (context, index) {
-          return _buildAnalisisCard(_analisis[index]);
-        },
       ),
     );
   }
 
-  Widget _buildAnalisisCard(Analisis analisis) {
-    Color estadoColor;
-    IconData estadoIcon;
-
-    switch (analisis.estado) {
-      case 'pendiente':
-        estadoColor = Colors.orange;
-        estadoIcon = Icons.pending;
-        break;
-      case 'en_proceso':
-        estadoColor = Colors.blue;
-        estadoIcon = Icons.hourglass_empty;
-        break;
-      case 'finalizado':
-        estadoColor = Colors.green;
-        estadoIcon = Icons.check_circle;
-        break;
-      default:
-        estadoColor = Colors.grey;
-        estadoIcon = Icons.help;
-    }
-
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () {
-          Navigator.pushNamed(context, '/detalle-analisis', arguments: analisis);
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
+  Widget _buildSeccion(String titulo, List<Widget> children) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Padding(
+          padding: const EdgeInsets.only(left: 4, bottom: 12),
+          child: Row(
             children: [
-              Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: estadoColor.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                    child: Icon(estadoIcon, color: estadoColor, size: 24),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          analisis.tipoAnalisis,
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Estado: ${analisis.estado}',
-                          style: TextStyle(color: estadoColor, fontSize: 14),
-                        ),
-                      ],
-                    ),
-                  ),
-                  Icon(Icons.chevron_right, color: Colors.grey[400]),
-                ],
+              Container(
+                width: 4,
+                height: 20,
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade700,
+                  borderRadius: BorderRadius.circular(2),
+                ),
               ),
-              const Divider(height: 24),
-              Row(
-                children: [
-                  Icon(Icons.calendar_today, size: 16, color: Colors.grey[600]),
-                  const SizedBox(width: 8),
-                  Text(
-                    '${analisis.fechaCreacion.day}/${analisis.fechaCreacion.month}/${analisis.fechaCreacion.year}',
-                    style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                  ),
-                  const SizedBox(width: 16),
-                  if (analisis.confianza != null) ...[
-                    Icon(Icons.analytics, size: 16, color: Colors.grey[600]),
-                    const SizedBox(width: 8),
-                    Text(
-                      'Confianza: ${(analisis.confianza! * 100).toStringAsFixed(1)}%',
-                      style: TextStyle(color: Colors.grey[600], fontSize: 14),
-                    ),
-                  ],
-                ],
+              const SizedBox(width: 8),
+              Text(
+                titulo,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.blue.shade700,
+                ),
               ),
             ],
           ),
         ),
-      ),
-    );
-  }
-
-  Widget _buildSeccion(String titulo) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
-      child: Text(
-        titulo,
-        style: TextStyle(
-          fontSize: 18,
-          fontWeight: FontWeight.bold,
-          color: Colors.blue.shade700,
-        ),
-      ),
+        ...children,
+      ],
     );
   }
 
   Widget _buildInfoCard(List<Widget> children) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+    return Container(
+      width: double.infinity,
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
       child: Padding(
         padding: const EdgeInsets.all(16),
-        child: Column(children: children),
+        child: Column(
+          children: children,
+        ),
       ),
     );
   }
 
   Widget _buildInfoRow(IconData icon, String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.only(bottom: 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: Colors.blue.shade700),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: Colors.blue.shade50,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, size: 20, color: Colors.blue.shade700),
+          ),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -442,6 +480,7 @@ class _PacienteDetallePageState extends State<PacienteDetallePage> {
                   style: TextStyle(
                     fontSize: 12,
                     color: Colors.grey[600],
+                    fontWeight: FontWeight.w500,
                   ),
                 ),
                 const SizedBox(height: 4),
@@ -449,7 +488,8 @@ class _PacienteDetallePageState extends State<PacienteDetallePage> {
                   value,
                   style: const TextStyle(
                     fontSize: 15,
-                    fontWeight: FontWeight.w500,
+                    fontWeight: FontWeight.w600,
+                    color: Colors.black87,
                   ),
                 ),
               ],
