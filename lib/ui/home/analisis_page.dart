@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mediscan_app/controllers/analisis_controller.dart';
 import 'package:mediscan_app/models/analisis_model.dart';
 import 'package:mediscan_app/models/paciente_model.dart';
+import 'package:mediscan_app/services/cloudinary_service.dart'; // ⬅️ IMPORTANTE
 
 class AnalisisFormPage extends StatefulWidget {
   final Paciente paciente;
@@ -113,11 +114,16 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('No hay usuario autenticado');
 
-      // 1. Subir imagen a Firebase Storage
-      final imagenUrl = await _controller.subirImagen(
-        _imagenSeleccionada!,
-        widget.paciente.id!,
-      );
+      // -----------------------------------------------------------
+      // 1. SUBIR IMAGEN A CLOUDINARY (REEMPLAZA FIREBASE STORAGE)
+      // -----------------------------------------------------------
+      final cloudinary = CloudinaryService();
+      final imagenUrl = await cloudinary.uploadImage(_imagenSeleccionada!);
+
+      if (imagenUrl == null) {
+        throw Exception("Error subiendo imagen a Cloudinary");
+      }
+      // -----------------------------------------------------------
 
       // 2. Crear el análisis
       final analisis = Analisis(
@@ -171,7 +177,6 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Información del paciente
             Card(
               elevation: 2,
               shape: RoundedRectangleBorder(
@@ -224,7 +229,6 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
 
             const SizedBox(height: 24),
 
-            // Tipo de análisis
             Text(
               'Tipo de Análisis',
               style: TextStyle(
@@ -256,7 +260,6 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
 
             const SizedBox(height: 24),
 
-            // Imagen
             Text(
               'Imagen del Análisis',
               style: TextStyle(
@@ -273,7 +276,6 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
 
             const SizedBox(height: 24),
 
-            // Observaciones
             Text(
               'Observaciones (Opcional)',
               style: TextStyle(
@@ -298,7 +300,6 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
 
             const SizedBox(height: 32),
 
-            // Botón guardar
             SizedBox(
               width: double.infinity,
               height: 50,

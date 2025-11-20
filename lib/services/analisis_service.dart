@@ -1,45 +1,37 @@
 import 'dart:io';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:firebase_storage/firebase_storage.dart';
 import 'package:mediscan_app/models/analisis_model.dart';
+import 'package:mediscan_app/services/cloudinary_service.dart';
 
 class AnalisisService {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-  final FirebaseStorage _storage = FirebaseStorage.instance;
-  final String collectionName = 'analisis';
+  final CloudinaryService _cloudinary = CloudinaryService();
 
-  /// Subir imagen a Firebase Storage
+  static const String collectionName = 'analisis';
+
+  /// SUBIR IMAGEN A CLOUDINARY
   Future<String> subirImagen(File imagen, String pacienteId) async {
-    try {
-      final timestamp = DateTime.now().millisecondsSinceEpoch;
-      final fileName = 'analisis_${pacienteId}_$timestamp.jpg';
-      final ref = _storage.ref().child('analisis/$pacienteId/$fileName');
-      
-      // Subir archivo
-      final uploadTask = await ref.putFile(imagen);
-      
-      // Obtener URL de descarga
-      final url = await uploadTask.ref.getDownloadURL();
-      
-      return url;
-    } catch (e) {
-      throw Exception('Error al subir imagen: $e');
+    final imageUrl = await _cloudinary.uploadImage(imagen);
+
+    if (imageUrl == null || imageUrl.isEmpty) {
+      throw Exception("Cloudinary no devolvió una URL válida.");
     }
+
+    return imageUrl;
   }
 
-  /// Registrar un nuevo análisis
+  /// REGISTRAR UN NUEVO ANÁLISIS EN FIRESTORE
   Future<String> registrarAnalisis(Analisis analisis) async {
     try {
-      final docRef = await _firestore
-          .collection(collectionName)
-          .add(analisis.toMap());
+      final docRef =
+          await _firestore.collection(collectionName).add(analisis.toMap());
       return docRef.id;
     } catch (e) {
       throw Exception('Error al registrar análisis: $e');
     }
   }
 
-  /// Obtener análisis de un paciente
+  /// OBTENER ANÁLISIS POR PACIENTE
   Future<List<Analisis>> obtenerAnalisisPorPaciente(String pacienteId) async {
     try {
       final snapshot = await _firestore
@@ -52,11 +44,11 @@ class AnalisisService {
           .map((doc) => Analisis.fromMap(doc.data(), doc.id))
           .toList();
     } catch (e) {
-      throw Exception('Error al obtener análisis: $e');
+      throw Exception('Error al obtener análisis por paciente: $e');
     }
   }
 
-  /// Obtener análisis de un doctor
+  /// OBTENER ANÁLISIS POR DOCTOR
   Future<List<Analisis>> obtenerAnalisisPorDoctor(String doctorId) async {
     try {
       final snapshot = await _firestore
@@ -69,11 +61,11 @@ class AnalisisService {
           .map((doc) => Analisis.fromMap(doc.data(), doc.id))
           .toList();
     } catch (e) {
-      throw Exception('Error al obtener análisis: $e');
+      throw Exception('Error al obtener análisis por doctor: $e');
     }
   }
 
-  /// Obtener análisis por estado
+  /// OBTENER ANÁLISIS POR ESTADO
   Future<List<Analisis>> obtenerAnalisisPorEstado(
       String doctorId, String estado) async {
     try {
@@ -88,24 +80,23 @@ class AnalisisService {
           .map((doc) => Analisis.fromMap(doc.data(), doc.id))
           .toList();
     } catch (e) {
-      throw Exception('Error al obtener análisis: $e');
+      throw Exception('Error al obtener análisis por estado: $e');
     }
   }
 
-  /// Obtener un análisis por ID
+  /// OBTENER ANÁLISIS POR ID
   Future<Analisis?> obtenerAnalisisPorId(String id) async {
     try {
       final doc = await _firestore.collection(collectionName).doc(id).get();
-      if (doc.exists) {
-        return Analisis.fromMap(doc.data()!, doc.id);
-      }
-      return null;
+      if (!doc.exists) return null;
+
+      return Analisis.fromMap(doc.data()!, doc.id);
     } catch (e) {
-      throw Exception('Error al obtener análisis: $e');
+      throw Exception('Error al obtener análisis por ID: $e');
     }
   }
 
-  /// Actualizar análisis completo
+  /// ACTUALIZAR ANÁLISIS COMPLETO
   Future<void> actualizarAnalisis(String id, Analisis analisis) async {
     try {
       await _firestore
@@ -117,7 +108,7 @@ class AnalisisService {
     }
   }
 
-  /// Actualizar solo el estado
+  /// ACTUALIZAR ESTADO
   Future<void> actualizarEstado(String id, String nuevoEstado) async {
     try {
       await _firestore.collection(collectionName).doc(id).update({
@@ -129,7 +120,7 @@ class AnalisisService {
     }
   }
 
-  /// Actualizar resultado del análisis (después de procesarlo con IA)
+  /// ACTUALIZAR RESULTADOS DE IA
   Future<void> actualizarResultado(
     String id,
     String resultado,
@@ -147,54 +138,43 @@ class AnalisisService {
         'fecha_analisis': DateTime.now().toIso8601String(),
       });
     } catch (e) {
-      throw Exception('Error al actualizar resultado: $e');
+      throw Exception('Error al actualizar el resultado: $e');
     }
   }
 
-  /// Eliminar análisis (incluye eliminar imagen de Storage)
+  /// ELIMINAR ANÁLISIS
   Future<void> eliminarAnalisis(String id, String imagenUrl) async {
     try {
-      // Eliminar imagen de Storage
-      try {
-        final ref = _storage.refFromURL(imagenUrl);
-        await ref.delete();
-      } catch (e) {
-        print('Error al eliminar imagen de Storage: $e');
-        // Continuamos aunque falle la eliminación de la imagen
-      }
-
-      // Eliminar documento de Firestore
       await _firestore.collection(collectionName).doc(id).delete();
+      // Aquí NO puedes borrar la imagen porque Cloudinary requiere API secret.
     } catch (e) {
       throw Exception('Error al eliminar análisis: $e');
     }
   }
 
-  /// Stream de análisis de un paciente (para actualizaciones en tiempo real)
+  /// STREAM: ANÁLISIS DEL PACIENTE EN TIEMPO REAL
   Stream<List<Analisis>> streamAnalisisPorPaciente(String pacienteId) {
     return _firestore
         .collection(collectionName)
         .where('paciente_id', isEqualTo: pacienteId)
         .orderBy('fecha_creacion', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Analisis.fromMap(doc.data(), doc.id))
-            .toList());
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Analisis.fromMap(doc.data(), doc.id)).toList());
   }
 
-  /// Stream de análisis de un doctor (para actualizaciones en tiempo real)
+  /// STREAM: ANÁLISIS DEL DOCTOR EN TIEMPO REAL
   Stream<List<Analisis>> streamAnalisisPorDoctor(String doctorId) {
     return _firestore
         .collection(collectionName)
         .where('doctor_id', isEqualTo: doctorId)
         .orderBy('fecha_creacion', descending: true)
         .snapshots()
-        .map((snapshot) => snapshot.docs
-            .map((doc) => Analisis.fromMap(doc.data(), doc.id))
-            .toList());
+        .map((snapshot) =>
+            snapshot.docs.map((doc) => Analisis.fromMap(doc.data(), doc.id)).toList());
   }
 
-  /// Obtener estadísticas de análisis del doctor
+  /// ESTADÍSTICAS DEL DOCTOR
   Future<Map<String, int>> obtenerEstadisticas(String doctorId) async {
     try {
       final snapshot = await _firestore
@@ -202,28 +182,20 @@ class AnalisisService {
           .where('doctor_id', isEqualTo: doctorId)
           .get();
 
-      int total = snapshot.docs.length;
       int pendientes = 0;
       int enProceso = 0;
       int finalizados = 0;
 
       for (var doc in snapshot.docs) {
         final estado = doc.data()['estado'] ?? 'pendiente';
-        switch (estado) {
-          case 'pendiente':
-            pendientes++;
-            break;
-          case 'en_proceso':
-            enProceso++;
-            break;
-          case 'finalizado':
-            finalizados++;
-            break;
-        }
+
+        if (estado == 'pendiente') pendientes++;
+        if (estado == 'en_proceso') enProceso++;
+        if (estado == 'finalizado') finalizados++;
       }
 
       return {
-        'total': total,
+        'total': snapshot.docs.length,
         'pendientes': pendientes,
         'en_proceso': enProceso,
         'finalizados': finalizados,

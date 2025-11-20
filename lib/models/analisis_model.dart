@@ -65,10 +65,11 @@ class Analisis {
       resultado: map['resultado'],
       diagnostico: map['diagnostico'],
       observaciones: map['observaciones'],
-      confianza: map['confianza']?.toDouble(),
-      datosIA: map['datos_ia'] != null 
-          ? Map<String, dynamic>.from(map['datos_ia'])
+      confianza: (map['confianza'] != null)
+          ? double.tryParse(map['confianza'].toString())
           : null,
+      datosIA:
+          map['datos_ia'] != null ? Map<String, dynamic>.from(map['datos_ia']) : null,
     );
   }
 
