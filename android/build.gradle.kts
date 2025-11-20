@@ -5,27 +5,19 @@ allprojects {
     }
 }
 
-// Configure Java toolchain for subprojects that support it. Request Java 21.
-java {
-    toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
-    }
-}
+// 🔧 Quitar el bloque "java { }" — no se usa en Flutter Android
 
-val newBuildDir: Directory =
-    rootProject.layout.buildDirectory
-        .dir("../../build")
-        .get()
-rootProject.layout.buildDirectory.value(newBuildDir)
+// ✅ Reubicar la configuración del directorio de compilación
+val newBuildDir = rootProject.layout.buildDirectory.dir("../../build").get()
+rootProject.layout.buildDirectory.set(newBuildDir)
 
 subprojects {
-    val newSubprojectBuildDir: Directory = newBuildDir.dir(project.name)
-    project.layout.buildDirectory.value(newSubprojectBuildDir)
-}
-subprojects {
+    val newSubprojectBuildDir = newBuildDir.dir(project.name)
+    project.layout.buildDirectory.set(newSubprojectBuildDir)
     project.evaluationDependsOn(":app")
 }
 
+// ✅ Tarea de limpieza estándar
 tasks.register<Delete>("clean") {
     delete(rootProject.layout.buildDirectory)
 }

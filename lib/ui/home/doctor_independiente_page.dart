@@ -6,7 +6,7 @@ import 'package:mediscan_app/models/empresa_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 
 class DoctorIndependientePage extends StatefulWidget {
-  const DoctorIndependientePage({Key? key}) : super(key: key);
+  const DoctorIndependientePage({super.key});
 
   @override
   State<DoctorIndependientePage> createState() =>
