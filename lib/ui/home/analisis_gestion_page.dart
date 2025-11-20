@@ -3,21 +3,20 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mediscan_app/controllers/paciente_controller.dart';
 import 'package:mediscan_app/models/paciente_model.dart';
 
-class PacientesListPage extends StatefulWidget {
-  const PacientesListPage({Key? key}) : super(key: key);
+class AnalisisGestionPage extends StatefulWidget {
+  const AnalisisGestionPage({Key? key}) : super(key: key);
 
   @override
-  State<PacientesListPage> createState() => _PacientesListPageState();
+  State<AnalisisGestionPage> createState() => _AnalisisGestionPageState();
 }
 
-class _PacientesListPageState extends State<PacientesListPage> {
-  final PacienteController _controller = PacienteController();
+class _AnalisisGestionPageState extends State<AnalisisGestionPage> {
+  final PacienteController _pacienteController = PacienteController();
   final TextEditingController _searchController = TextEditingController();
   List<Paciente> _pacientes = [];
   List<Paciente> _pacientesFiltrados = [];
   bool _isLoading = true;
   String? _doctorId;
-  String? _errorMessage;
 
   @override
   void initState() {
@@ -26,68 +25,32 @@ class _PacientesListPageState extends State<PacientesListPage> {
   }
 
   Future<void> _inicializar() async {
-    await _cargarDoctorId();
-    if (_doctorId != null) {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user != null) {
+      setState(() => _doctorId = user.uid);
       await _cargarPacientes();
     }
   }
 
-  Future<void> _cargarDoctorId() async {
-    try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        setState(() {
-          _doctorId = user.uid;
-        });
-        print('✅ Doctor ID cargado: $_doctorId');
-      } else {
-        setState(() {
-          _errorMessage = 'No hay usuario autenticado';
-        });
-        print('❌ No hay usuario autenticado');
-      }
-    } catch (e) {
-      print('❌ Error al cargar doctor ID: $e');
-      setState(() {
-        _errorMessage = 'Error al cargar información del usuario';
-      });
-    }
-  }
-
   Future<void> _cargarPacientes() async {
-    if (_doctorId == null) {
-      print('⚠️ No se puede cargar pacientes: doctorId es null');
-      return;
-    }
+    if (_doctorId == null) return;
     
-    setState(() {
-      _isLoading = true;
-      _errorMessage = null;
-    });
+    setState(() => _isLoading = true);
 
     try {
-      print('🔄 Cargando pacientes para doctor: $_doctorId');
-      final pacientes = await _controller.obtenerPacientesDoctor(_doctorId!);
-      print('✅ Pacientes cargados: ${pacientes.length}');
-      
+      final pacientes = await _pacienteController.obtenerPacientesDoctor(_doctorId!);
       setState(() {
         _pacientes = pacientes;
         _pacientesFiltrados = pacientes;
         _isLoading = false;
       });
     } catch (e) {
-      print('❌ Error al cargar pacientes: $e');
-      setState(() {
-        _isLoading = false;
-        _errorMessage = 'Error al cargar pacientes: ${e.toString()}';
-      });
-      
+      setState(() => _isLoading = false);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al cargar pacientes: $e'),
             backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
           ),
         );
       }
@@ -109,36 +72,78 @@ class _PacientesListPageState extends State<PacientesListPage> {
     });
   }
 
+  void _seleccionarPaciente(Paciente paciente) {
+    Navigator.pushNamed(
+      context,
+      '/nuevo-analisis',
+      arguments: paciente,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey[50],
       appBar: AppBar(
-        title: const Text('Mis Pacientes'),
+        title: const Text('Nuevo Análisis'),
         backgroundColor: Colors.blue.shade700,
         elevation: 0,
-        actions: [
-          // Botón de debug - remover en producción
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _cargarPacientes,
-            tooltip: 'Recargar',
-          ),
-        ],
-      ),
-      floatingActionButton: FloatingActionButton.extended(
-        onPressed: () async {
-          final resultado = await Navigator.pushNamed(context, '/registrar-paciente');
-          if (resultado == true) {
-            _cargarPacientes();
-          }
-        },
-        backgroundColor: Colors.blue.shade700,
-        icon: const Icon(Icons.person_add),
-        label: const Text('Nuevo Paciente'),
       ),
       body: Column(
         children: [
+          // Instrucción
+          Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                colors: [Colors.blue.shade700, Colors.blue.shade500],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: const Icon(
+                    Icons.person_search,
+                    color: Colors.white,
+                    size: 32,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Seleccione un paciente',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 20,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      SizedBox(height: 4),
+                      Text(
+                        'Toque en un paciente para iniciar el análisis',
+                        style: TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
           // Barra de búsqueda
           Container(
             padding: const EdgeInsets.all(16),
@@ -147,7 +152,7 @@ class _PacientesListPageState extends State<PacientesListPage> {
               controller: _searchController,
               onChanged: _filtrarPacientes,
               decoration: InputDecoration(
-                hintText: 'Buscar por nombre o documento',
+                hintText: 'Buscar paciente...',
                 prefixIcon: const Icon(Icons.search),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
@@ -166,25 +171,6 @@ class _PacientesListPageState extends State<PacientesListPage> {
               ),
             ),
           ),
-
-          // Info de debug - remover en producción
-          if (_doctorId != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: Colors.blue.shade50,
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, size: 16, color: Colors.blue.shade700),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Doctor ID: ${_doctorId!.substring(0, 8)}... | Pacientes: ${_pacientes.length}',
-                      style: TextStyle(fontSize: 12, color: Colors.blue.shade700),
-                    ),
-                  ),
-                ],
-              ),
-            ),
 
           // Lista de pacientes
           Expanded(
@@ -209,53 +195,6 @@ class _PacientesListPageState extends State<PacientesListPage> {
       );
     }
 
-    if (_errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 80, color: Colors.red[300]),
-            const SizedBox(height: 16),
-            Text(
-              _errorMessage!,
-              style: const TextStyle(fontSize: 16, color: Colors.red),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _cargarPacientes,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Reintentar'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue.shade700,
-              ),
-            ),
-          ],
-        ),
-      );
-    }
-
-    if (_doctorId == null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.warning_amber, size: 80, color: Colors.orange[400]),
-            const SizedBox(height: 16),
-            const Text(
-              'No se pudo identificar al doctor',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Por favor, cierre sesión e intente nuevamente',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-          ],
-        ),
-      );
-    }
-
     if (_pacientesFiltrados.isEmpty) {
       return Center(
         child: Column(
@@ -271,9 +210,10 @@ class _PacientesListPageState extends State<PacientesListPage> {
             ),
             const SizedBox(height: 8),
             if (_searchController.text.isEmpty)
-              const Text(
-                'Presiona + para agregar un paciente',
-                style: TextStyle(fontSize: 14, color: Colors.grey),
+              TextButton.icon(
+                onPressed: () => Navigator.pushNamed(context, '/registrar-paciente'),
+                icon: const Icon(Icons.person_add),
+                label: const Text('Registrar primer paciente'),
               ),
           ],
         ),
@@ -299,29 +239,33 @@ class _PacientesListPageState extends State<PacientesListPage> {
       elevation: 2,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
       child: InkWell(
-        onTap: () async {
-          await Navigator.pushNamed(
-            context,
-            '/detalle-paciente',
-            arguments: paciente,
-          );
-          _cargarPacientes();
-        },
+        onTap: () => _seleccionarPaciente(paciente),
         borderRadius: BorderRadius.circular(12),
         child: Padding(
           padding: const EdgeInsets.all(16),
           child: Row(
             children: [
               // Avatar
-              CircleAvatar(
-                radius: 30,
-                backgroundColor: Colors.blue.shade100,
-                child: Text(
-                  paciente.nombres[0].toUpperCase() + paciente.apellidos[0].toUpperCase(),
-                  style: TextStyle(
-                    color: Colors.blue.shade700,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
+              Container(
+                width: 60,
+                height: 60,
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [Colors.blue.shade400, Colors.blue.shade600],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Center(
+                  child: Text(
+                    paciente.nombres[0].toUpperCase() + 
+                    paciente.apellidos[0].toUpperCase(),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 20,
+                    ),
                   ),
                 ),
               ),
@@ -339,18 +283,24 @@ class _PacientesListPageState extends State<PacientesListPage> {
                         fontSize: 16,
                       ),
                     ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '${paciente.tipoDocumento}: ${paciente.numeroDocumento}',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
-                      ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        Icon(Icons.badge, size: 14, color: Colors.grey[600]),
+                        const SizedBox(width: 4),
+                        Text(
+                          '${paciente.tipoDocumento}: ${paciente.numeroDocumento}',
+                          style: TextStyle(
+                            color: Colors.grey[600],
+                            fontSize: 13,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 4),
                     Row(
                       children: [
-                        Icon(Icons.cake, size: 16, color: Colors.grey[600]),
+                        Icon(Icons.cake, size: 14, color: Colors.grey[600]),
                         const SizedBox(width: 4),
                         Text(
                           '${paciente.edad} años',
@@ -364,7 +314,7 @@ class _PacientesListPageState extends State<PacientesListPage> {
                           paciente.genero?.toLowerCase() == 'masculino'
                               ? Icons.male
                               : Icons.female,
-                          size: 16,
+                          size: 14,
                           color: Colors.grey[600],
                         ),
                         const SizedBox(width: 4),
@@ -381,8 +331,18 @@ class _PacientesListPageState extends State<PacientesListPage> {
                 ),
               ),
 
-              // Botón de ver más
-              Icon(Icons.chevron_right, color: Colors.grey[400]),
+              // Botón de selección
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.blue.shade50,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.arrow_forward,
+                  color: Colors.blue.shade700,
+                ),
+              ),
             ],
           ),
         ),
