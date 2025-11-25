@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:mediscan_app/controllers/paciente_controller.dart';
 import 'package:mediscan_app/models/paciente_model.dart';
+import 'package:mediscan_app/ui/theme/app_colors.dart';
+import 'package:mediscan_app/ui/widgets/app_widgets.dart';
 
 class PacientesListPage extends StatefulWidget {
   const PacientesListPage({Key? key}) : super(key: key);
@@ -39,15 +41,12 @@ class _PacientesListPageState extends State<PacientesListPage> {
         setState(() {
           _doctorId = user.uid;
         });
-        print('✅ Doctor ID cargado: $_doctorId');
       } else {
         setState(() {
           _errorMessage = 'No hay usuario autenticado';
         });
-        print('❌ No hay usuario autenticado');
       }
     } catch (e) {
-      print('❌ Error al cargar doctor ID: $e');
       setState(() {
         _errorMessage = 'Error al cargar información del usuario';
       });
@@ -55,10 +54,7 @@ class _PacientesListPageState extends State<PacientesListPage> {
   }
 
   Future<void> _cargarPacientes() async {
-    if (_doctorId == null) {
-      print('⚠️ No se puede cargar pacientes: doctorId es null');
-      return;
-    }
+    if (_doctorId == null) return;
     
     setState(() {
       _isLoading = true;
@@ -66,9 +62,7 @@ class _PacientesListPageState extends State<PacientesListPage> {
     });
 
     try {
-      print('🔄 Cargando pacientes para doctor: $_doctorId');
       final pacientes = await _controller.obtenerPacientesDoctor(_doctorId!);
-      print('✅ Pacientes cargados: ${pacientes.length}');
       
       setState(() {
         _pacientes = pacientes;
@@ -76,7 +70,6 @@ class _PacientesListPageState extends State<PacientesListPage> {
         _isLoading = false;
       });
     } catch (e) {
-      print('❌ Error al cargar pacientes: $e');
       setState(() {
         _isLoading = false;
         _errorMessage = 'Error al cargar pacientes: ${e.toString()}';
@@ -86,8 +79,7 @@ class _PacientesListPageState extends State<PacientesListPage> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text('Error al cargar pacientes: $e'),
-            backgroundColor: Colors.red,
-            duration: const Duration(seconds: 5),
+            backgroundColor: AppColors.error,
           ),
         );
       }
@@ -112,17 +104,151 @@ class _PacientesListPageState extends State<PacientesListPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title: const Text('Mis Pacientes'),
-        backgroundColor: Colors.blue.shade700,
-        elevation: 0,
-        actions: [
-          // Botón de debug - remover en producción
-          IconButton(
-            icon: const Icon(Icons.refresh),
-            onPressed: _cargarPacientes,
-            tooltip: 'Recargar',
+      backgroundColor: AppColors.background,
+      body: CustomScrollView(
+        slivers: [
+          // App Bar con gradiente
+          SliverAppBar(
+            expandedHeight: 160,
+            floating: false,
+            pinned: true,
+            backgroundColor: AppColors.primary,
+            flexibleSpace: FlexibleSpaceBar(
+              background: Container(
+                decoration: BoxDecoration(
+                  gradient: AppColors.primaryGradient,
+                ),
+                child: SafeArea(
+                  child: Padding(
+                    padding: const EdgeInsets.all(24),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.2),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Icon(
+                                Icons.people,
+                                color: Colors.white,
+                                size: 28,
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Mis Pacientes',
+                                    style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: Colors.white,
+                                    ),
+                                  ),
+                                  Text(
+                                    'Gestiona tu lista de pacientes',
+                                    style: TextStyle(
+                                      fontSize: 14,
+                                      color: Colors.white70,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ),
+            ),
+            actions: [
+              IconButton(
+                icon: const Icon(Icons.refresh),
+                onPressed: _cargarPacientes,
+                tooltip: 'Recargar',
+              ),
+            ],
+          ),
+
+          // Barra de búsqueda
+          SliverToBoxAdapter(
+            child: Container(
+              color: AppColors.surface,
+              padding: const EdgeInsets.all(16),
+              child: TextField(
+                controller: _searchController,
+                onChanged: _filtrarPacientes,
+                decoration: InputDecoration(
+                  hintText: 'Buscar por nombre o documento',
+                  hintStyle: const TextStyle(
+                    color: AppColors.textTertiary,
+                    fontSize: 14,
+                  ),
+                  prefixIcon: const Icon(
+                    Icons.search,
+                    color: AppColors.primary,
+                  ),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 20),
+                          onPressed: () {
+                            _searchController.clear();
+                            _filtrarPacientes('');
+                          },
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: AppColors.grey50,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.grey200),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                  ),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 14,
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // Contador de pacientes
+          if (!_isLoading && _pacientes.isNotEmpty)
+            SliverToBoxAdapter(
+              child: Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: Text(
+                  '${_pacientesFiltrados.length} ${_pacientesFiltrados.length == 1 ? "paciente" : "pacientes"}',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ),
+
+          // Lista de pacientes
+          SliverPadding(
+            padding: const EdgeInsets.all(16),
+            sliver: _buildContent(),
           ),
         ],
       ),
@@ -133,259 +259,231 @@ class _PacientesListPageState extends State<PacientesListPage> {
             _cargarPacientes();
           }
         },
-        backgroundColor: Colors.blue.shade700,
+        backgroundColor: AppColors.primary,
         icon: const Icon(Icons.person_add),
         label: const Text('Nuevo Paciente'),
-      ),
-      body: Column(
-        children: [
-          // Barra de búsqueda
-          Container(
-            padding: const EdgeInsets.all(16),
-            color: Colors.white,
-            child: TextField(
-              controller: _searchController,
-              onChanged: _filtrarPacientes,
-              decoration: InputDecoration(
-                hintText: 'Buscar por nombre o documento',
-                prefixIcon: const Icon(Icons.search),
-                suffixIcon: _searchController.text.isNotEmpty
-                    ? IconButton(
-                        icon: const Icon(Icons.clear),
-                        onPressed: () {
-                          _searchController.clear();
-                          _filtrarPacientes('');
-                        },
-                      )
-                    : null,
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.grey[100],
-              ),
-            ),
-          ),
-
-          // Info de debug - remover en producción
-          if (_doctorId != null)
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              color: Colors.blue.shade50,
-              child: Row(
-                children: [
-                  Icon(Icons.info_outline, size: 16, color: Colors.blue.shade700),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Doctor ID: ${_doctorId!.substring(0, 8)}... | Pacientes: ${_pacientes.length}',
-                      style: TextStyle(fontSize: 12, color: Colors.blue.shade700),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-          // Lista de pacientes
-          Expanded(
-            child: _buildContent(),
-          ),
-        ],
+        elevation: 4,
       ),
     );
   }
 
   Widget _buildContent() {
     if (_isLoading) {
-      return const Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            CircularProgressIndicator(),
-            SizedBox(height: 16),
-            Text('Cargando pacientes...'),
-          ],
+      return const SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              CircularProgressIndicator(color: AppColors.primary),
+              SizedBox(height: 16),
+              Text(
+                'Cargando pacientes...',
+                style: TextStyle(color: AppColors.textSecondary),
+              ),
+            ],
+          ),
         ),
       );
     }
 
     if (_errorMessage != null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.error_outline, size: 80, color: Colors.red[300]),
-            const SizedBox(height: 16),
-            Text(
-              _errorMessage!,
-              style: const TextStyle(fontSize: 16, color: Colors.red),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 16),
-            ElevatedButton.icon(
-              onPressed: _cargarPacientes,
-              icon: const Icon(Icons.refresh),
-              label: const Text('Reintentar'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.blue.shade700,
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.error_outline, size: 80, color: AppColors.error.withOpacity(0.5)),
+              const SizedBox(height: 16),
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 32),
+                child: Text(
+                  _errorMessage!,
+                  style: const TextStyle(fontSize: 16, color: AppColors.error),
+                  textAlign: TextAlign.center,
+                ),
               ),
-            ),
-          ],
+              const SizedBox(height: 24),
+              AppPrimaryButton(
+                text: 'Reintentar',
+                onPressed: _cargarPacientes,
+                icon: Icons.refresh,
+              ),
+            ],
+          ),
         ),
       );
     }
 
     if (_doctorId == null) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.warning_amber, size: 80, color: Colors.orange[400]),
-            const SizedBox(height: 16),
-            const Text(
-              'No se pudo identificar al doctor',
-              style: TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            const SizedBox(height: 8),
-            const Text(
-              'Por favor, cierre sesión e intente nuevamente',
-              style: TextStyle(fontSize: 14, color: Colors.grey),
-            ),
-          ],
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.warning_amber, size: 80, color: AppColors.warning.withOpacity(0.5)),
+              const SizedBox(height: 16),
+              const Text(
+                'No se pudo identificar al doctor',
+                style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+              ),
+            ],
+          ),
         ),
       );
     }
 
     if (_pacientesFiltrados.isEmpty) {
-      return Center(
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(Icons.person_off, size: 80, color: Colors.grey[400]),
-            const SizedBox(height: 16),
-            Text(
-              _searchController.text.isEmpty
-                  ? 'No hay pacientes registrados'
-                  : 'No se encontraron pacientes',
-              style: const TextStyle(fontSize: 16, color: Colors.grey),
-            ),
-            const SizedBox(height: 8),
-            if (_searchController.text.isEmpty)
-              const Text(
-                'Presiona + para agregar un paciente',
-                style: TextStyle(fontSize: 14, color: Colors.grey),
+      return SliverFillRemaining(
+        child: Center(
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(
+                Icons.person_off,
+                size: 80,
+                color: AppColors.textTertiary.withOpacity(0.5),
               ),
-          ],
+              const SizedBox(height: 16),
+              Text(
+                _searchController.text.isEmpty
+                    ? 'No hay pacientes registrados'
+                    : 'No se encontraron pacientes',
+                style: const TextStyle(fontSize: 16, color: AppColors.textSecondary),
+              ),
+              const SizedBox(height: 8),
+              if (_searchController.text.isEmpty)
+                const Text(
+                  'Presiona + para agregar un paciente',
+                  style: TextStyle(fontSize: 14, color: AppColors.textTertiary),
+                ),
+            ],
+          ),
         ),
       );
     }
 
-    return RefreshIndicator(
-      onRefresh: _cargarPacientes,
-      child: ListView.builder(
-        padding: const EdgeInsets.all(12),
-        itemCount: _pacientesFiltrados.length,
-        itemBuilder: (context, index) {
+    return SliverList(
+      delegate: SliverChildBuilderDelegate(
+        (context, index) {
           final paciente = _pacientesFiltrados[index];
-          return _buildPacienteCard(paciente);
+          return Padding(
+            padding: const EdgeInsets.only(bottom: 12),
+            child: _buildPacienteCard(paciente),
+          );
         },
+        childCount: _pacientesFiltrados.length,
       ),
     );
   }
 
   Widget _buildPacienteCard(Paciente paciente) {
-    return Card(
-      margin: const EdgeInsets.only(bottom: 12),
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: () async {
-          await Navigator.pushNamed(
-            context,
-            '/detalle-paciente',
-            arguments: paciente,
-          );
-          _cargarPacientes();
-        },
-        borderRadius: BorderRadius.circular(12),
-        child: Padding(
-          padding: const EdgeInsets.all(16),
-          child: Row(
-            children: [
-              // Avatar
-              CircleAvatar(
-                radius: 30,
-                backgroundColor: Colors.blue.shade100,
-                child: Text(
-                  paciente.nombres[0].toUpperCase() + paciente.apellidos[0].toUpperCase(),
-                  style: TextStyle(
-                    color: Colors.blue.shade700,
-                    fontWeight: FontWeight.bold,
-                    fontSize: 18,
-                  ),
+    return AppCard(
+      onTap: () async {
+        await Navigator.pushNamed(
+          context,
+          '/detalle-paciente',
+          arguments: paciente,
+        );
+        _cargarPacientes();
+      },
+      child: Row(
+        children: [
+          // Avatar con iniciales
+          Container(
+            width: 56,
+            height: 56,
+            decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Center(
+              child: Text(
+                paciente.nombres[0].toUpperCase() + paciente.apellidos[0].toUpperCase(),
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 20,
                 ),
               ),
-              const SizedBox(width: 16),
+            ),
+          ),
+          const SizedBox(width: 16),
 
-              // Información
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+          // Información
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  paciente.nombreCompleto,
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                Row(
                   children: [
-                    Text(
-                      paciente.nombreCompleto,
-                      style: const TextStyle(
-                        fontWeight: FontWeight.bold,
-                        fontSize: 16,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
+                    Icon(Icons.badge, size: 14, color: AppColors.textSecondary),
+                    const SizedBox(width: 4),
                     Text(
                       '${paciente.tipoDocumento}: ${paciente.numeroDocumento}',
-                      style: TextStyle(
-                        color: Colors.grey[600],
-                        fontSize: 14,
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
                       ),
-                    ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        Icon(Icons.cake, size: 16, color: Colors.grey[600]),
-                        const SizedBox(width: 4),
-                        Text(
-                          '${paciente.edad} años',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 13,
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Icon(
-                          paciente.genero?.toLowerCase() == 'masculino'
-                              ? Icons.male
-                              : Icons.female,
-                          size: 16,
-                          color: Colors.grey[600],
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          paciente.genero ?? '',
-                          style: TextStyle(
-                            color: Colors.grey[600],
-                            fontSize: 13,
-                          ),
-                        ),
-                      ],
                     ),
                   ],
                 ),
-              ),
-
-              // Botón de ver más
-              Icon(Icons.chevron_right, color: Colors.grey[400]),
-            ],
+                const SizedBox(height: 4),
+                Row(
+                  children: [
+                    Icon(Icons.cake, size: 14, color: AppColors.textSecondary),
+                    const SizedBox(width: 4),
+                    Text(
+                      '${paciente.edad} años',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Icon(
+                      paciente.genero?.toLowerCase() == 'masculino'
+                          ? Icons.male
+                          : Icons.female,
+                      size: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      paciente.genero ?? '',
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
           ),
-        ),
+
+          // Icono de navegación
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: AppColors.primary.withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: const Icon(
+              Icons.chevron_right,
+              color: AppColors.primary,
+              size: 20,
+            ),
+          ),
+        ],
       ),
     );
   }
