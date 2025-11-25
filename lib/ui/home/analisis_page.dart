@@ -6,7 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:mediscan_app/controllers/analisis_controller.dart';
 import 'package:mediscan_app/models/analisis_model.dart';
 import 'package:mediscan_app/models/paciente_model.dart';
-import 'package:mediscan_app/services/cloudinary_service.dart'; // ⬅️ IMPORTANTE
+import 'package:mediscan_app/ui/theme/app_colors.dart';
+import 'package:mediscan_app/ui/widgets/app_widgets.dart';
 
 class AnalisisFormPage extends StatefulWidget {
   final Paciente paciente;
@@ -52,7 +53,10 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Error al seleccionar imagen: $e')),
+          SnackBar(
+            content: Text('Error al seleccionar imagen: $e'),
+            backgroundColor: AppColors.error,
+          ),
         );
       }
     }
@@ -61,14 +65,33 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
   void _mostrarOpcionesImagen() {
     showModalBottomSheet(
       context: context,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) => SafeArea(
-        child: Wrap(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
           children: [
+            const SizedBox(height: 12),
+            Container(
+              width: 50,
+              height: 5,
+              decoration: BoxDecoration(
+                color: AppColors.grey300,
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            const SizedBox(height: 24),
             ListTile(
-              leading: const Icon(Icons.camera_alt),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.primary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.camera_alt, color: AppColors.primary),
+              ),
               title: const Text('Tomar foto'),
               onTap: () {
                 Navigator.pop(context);
@@ -76,7 +99,14 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
               },
             ),
             ListTile(
-              leading: const Icon(Icons.photo_library),
+              leading: Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: AppColors.secondary.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(Icons.photo_library, color: AppColors.secondary),
+              ),
               title: const Text('Seleccionar de galería'),
               onTap: () {
                 Navigator.pop(context);
@@ -85,16 +115,24 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
             ),
             if (_imagenSeleccionada != null)
               ListTile(
-                leading: const Icon(Icons.delete, color: Colors.red),
+                leading: Container(
+                  padding: const EdgeInsets.all(8),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: const Icon(Icons.delete, color: AppColors.error),
+                ),
                 title: const Text(
                   'Eliminar imagen',
-                  style: TextStyle(color: Colors.red),
+                  style: TextStyle(color: AppColors.error),
                 ),
                 onTap: () {
                   Navigator.pop(context);
                   setState(() => _imagenSeleccionada = null);
                 },
               ),
+            const SizedBox(height: 24),
           ],
         ),
       ),
@@ -119,7 +157,6 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
       builder: (context) {
         return StatefulBuilder(
           builder: (context, setStateDialog) {
-            // Timer dentro del diálogo para actualizar mensajes
             timer = Timer.periodic(const Duration(seconds: 1), (_) {
               setStateDialog(() {
                 index = (index + 1) % mensajes.length;
@@ -128,28 +165,39 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
 
             return Dialog(
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(16),
+                borderRadius: BorderRadius.circular(24),
               ),
               child: Padding(
-                padding: const EdgeInsets.all(20),
+                padding: const EdgeInsets.all(32),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    const CircularProgressIndicator(),
-                    const SizedBox(height: 20),
-
-                    // MENSAJE QUE CAMBIA AUTOMÁTICAMENTE
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const CircularProgressIndicator(
+                        color: AppColors.primary,
+                        strokeWidth: 3,
+                      ),
+                    ),
+                    const SizedBox(height: 24),
                     Text(
                       mensajes[index],
                       textAlign: TextAlign.center,
                       style: const TextStyle(
                         fontSize: 16,
                         fontWeight: FontWeight.w600,
+                        color: AppColors.textPrimary,
                       ),
                     ),
-
-                    const SizedBox(height: 20),
-                    const LinearProgressIndicator(),
+                    const SizedBox(height: 16),
+                    const LinearProgressIndicator(
+                      color: AppColors.primary,
+                      backgroundColor: AppColors.grey200,
+                    ),
                   ],
                 ),
               ),
@@ -158,7 +206,6 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
         );
       },
     ).then((_) {
-      // Cancelar timer cuando se cierre el diálogo
       if (timer.isActive) timer.cancel();
     });
   }
@@ -168,25 +215,23 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
           content: Text('Por favor seleccione una imagen'),
-          backgroundColor: Colors.orange,
+          backgroundColor: AppColors.warning,
         ),
       );
       return;
     }
 
-    mostrarDialogoProcesandoConMensajes(); // ⬅ Popup con mensajes dinámicos
+    mostrarDialogoProcesandoConMensajes();
 
     try {
       final user = FirebaseAuth.instance.currentUser;
       if (user == null) throw Exception('No hay usuario autenticado');
 
-      // 1️⃣ Subir imagen a Cloudinary
       final String imagenUrl = await _controller.subirImagen(
         _imagenSeleccionada!,
         widget.paciente.id!,
       );
 
-      // 2️⃣ Procesar con IA
       final resultadoIA = await _controller.ejecutarIA(_imagenSeleccionada!);
 
       final diagnostico = resultadoIA["diagnostico"];
@@ -195,7 +240,6 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
         resultadoIA["predicciones"] ?? {},
       );
 
-      // 3️⃣ Crear análisis
       final analisis = Analisis(
         pacienteId: widget.paciente.id!,
         doctorId: user.uid,
@@ -213,23 +257,25 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
         fechaAnalisis: DateTime.now(),
       );
 
-      // 4️⃣ Guardar en Firestore
       await _controller.registrarAnalisis(analisis);
 
-      Navigator.pop(context); // ⬅ Cerrar diálogo
-      Navigator.pop(context, true); // ⬅ Cerrar la pantalla
+      Navigator.pop(context); // Cerrar diálogo
+      Navigator.pop(context, true); // Cerrar la pantalla
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
-          content: Text("Análisis completado correctamente"),
-          backgroundColor: Colors.green,
+          content: Text("✅ Análisis completado correctamente"),
+          backgroundColor: AppColors.success,
         ),
       );
     } catch (e) {
-      Navigator.pop(context); // ⬅ Cerrar diálogo si hay error
+      Navigator.pop(context); // Cerrar diálogo
 
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("❌ Error: $e"), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text("❌ Error: $e"),
+          backgroundColor: AppColors.error,
+        ),
       );
     }
   }
@@ -237,86 +283,99 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
+      backgroundColor: AppColors.background,
       appBar: AppBar(
         title: const Text('Nuevo Análisis'),
-        backgroundColor: Colors.blue.shade700,
+        backgroundColor: AppColors.primary,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Card(
-              elevation: 2,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(12),
-              ),
-              child: Padding(
-                padding: const EdgeInsets.all(16),
-                child: Row(
-                  children: [
-                    CircleAvatar(
-                      radius: 30,
-                      backgroundColor: Colors.blue.shade100,
+            // Información del paciente
+            AppCard(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Container(
+                    width: 56,
+                    height: 56,
+                    decoration: BoxDecoration(
+                      gradient: AppColors.primaryGradient,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Center(
                       child: Text(
                         widget.paciente.nombres[0].toUpperCase() +
                             widget.paciente.apellidos[0].toUpperCase(),
-                        style: TextStyle(
-                          color: Colors.blue.shade700,
+                        style: const TextStyle(
+                          color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 18,
+                          fontSize: 20,
                         ),
                       ),
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            widget.paciente.nombreCompleto,
-                            style: const TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                            ),
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          widget.paciente.nombreCompleto,
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            fontSize: 16,
+                            color: AppColors.textPrimary,
                           ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${widget.paciente.edad} años - ${widget.paciente.numeroDocumento}',
-                            style: TextStyle(
-                              color: Colors.grey[600],
-                              fontSize: 14,
-                            ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          '${widget.paciente.edad} años - ${widget.paciente.numeroDocumento}',
+                          style: const TextStyle(
+                            color: AppColors.textSecondary,
+                            fontSize: 14,
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
-                  ],
-                ),
+                  ),
+                ],
               ),
             ),
 
             const SizedBox(height: 24),
 
-            Text(
+            // Tipo de análisis
+            const Text(
               'Tipo de Análisis',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.blue.shade700,
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
+            
             DropdownButtonFormField<String>(
               value: _tipoAnalisis,
               decoration: InputDecoration(
-                prefixIcon: const Icon(Icons.medical_services),
+                prefixIcon: const Icon(Icons.medical_services, color: AppColors.primary),
+                filled: true,
+                fillColor: AppColors.grey50,
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(12),
+                  borderSide: BorderSide.none,
                 ),
-                filled: true,
-                fillColor: Colors.white,
+                enabledBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.grey200),
+                ),
+                focusedBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(12),
+                  borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                ),
               ),
               items: _tiposAnalisis.map((tipo) {
                 return DropdownMenuItem(value: tipo, child: Text(tipo));
@@ -330,12 +389,13 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
 
             const SizedBox(height: 24),
 
-            Text(
+            // Imagen
+            const Text(
               'Imagen del Análisis',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.blue.shade700,
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
@@ -346,48 +406,30 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
 
             const SizedBox(height: 24),
 
-            Text(
+            // Observaciones
+            const Text(
               'Observaciones (Opcional)',
               style: TextStyle(
                 fontSize: 16,
                 fontWeight: FontWeight.bold,
-                color: Colors.blue.shade700,
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 12),
-            TextField(
+            
+            AppTextField(
               controller: _observacionesController,
               maxLines: 4,
-              decoration: InputDecoration(
-                hintText: 'Agregue observaciones sobre el análisis...',
-                border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                filled: true,
-                fillColor: Colors.white,
-              ),
+              label: 'Agregue observaciones sobre el análisis...',
             ),
 
             const SizedBox(height: 32),
 
-            // Botón guardar
-            SizedBox(
-              width: double.infinity,
-              height: 50,
-              child: ElevatedButton.icon(
-                onPressed: _iniciarAnalisis,
-                style: ElevatedButton.styleFrom(
-                  backgroundColor: Colors.blue.shade700,
-                  shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                ),
-                icon: const Icon(Icons.analytics_outlined),
-                label: const Text(
-                  "Iniciar análisis",
-                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
-                ),
-              ),
+            // Botón
+            AppPrimaryButton(
+              text: "Iniciar análisis",
+              onPressed: _iniciarAnalisis,
+              icon: Icons.analytics_outlined,
             ),
           ],
         ),
@@ -398,23 +440,38 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
   Widget _buildSeleccionarImagenCard() {
     return InkWell(
       onTap: _mostrarOpcionesImagen,
-      borderRadius: BorderRadius.circular(12),
+      borderRadius: BorderRadius.circular(16),
       child: Container(
         width: double.infinity,
         height: 200,
         decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: Colors.grey.shade300, width: 2),
+          color: AppColors.grey50,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: AppColors.grey300, width: 2, style: BorderStyle.solid),
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.add_photo_alternate, size: 64, color: Colors.grey[400]),
+            Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: AppColors.primary.withOpacity(0.1),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.add_photo_alternate,
+                size: 48,
+                color: AppColors.primary,
+              ),
+            ),
             const SizedBox(height: 16),
-            Text(
+            const Text(
               'Toque para seleccionar imagen',
-              style: TextStyle(fontSize: 16, color: Colors.grey[600]),
+              style: TextStyle(
+                fontSize: 16,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ],
         ),
@@ -426,7 +483,7 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
     return Stack(
       children: [
         ClipRRect(
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           child: Image.file(
             _imagenSeleccionada!,
             width: double.infinity,
@@ -435,14 +492,18 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
           ),
         ),
         Positioned(
-          top: 8,
-          right: 8,
-          child: IconButton(
-            onPressed: _mostrarOpcionesImagen,
-            icon: const Icon(Icons.edit),
-            style: IconButton.styleFrom(
-              backgroundColor: Colors.white,
-              foregroundColor: Colors.blue.shade700,
+          top: 12,
+          right: 12,
+          child: Container(
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(8),
+              boxShadow: AppColors.cardShadow,
+            ),
+            child: IconButton(
+              onPressed: _mostrarOpcionesImagen,
+              icon: const Icon(Icons.edit, color: AppColors.primary),
+              tooltip: 'Cambiar imagen',
             ),
           ),
         ),

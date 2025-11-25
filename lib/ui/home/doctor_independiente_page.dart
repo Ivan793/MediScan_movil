@@ -4,6 +4,8 @@ import 'package:mediscan_app/controllers/doctor_controller.dart';
 import 'package:mediscan_app/models/doctor_model.dart';
 import 'package:mediscan_app/models/empresa_model.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:mediscan_app/ui/theme/app_colors.dart';
+import 'package:mediscan_app/ui/widgets/app_widgets.dart';
 
 class DoctorIndependientePage extends StatefulWidget {
   const DoctorIndependientePage({super.key});
@@ -62,7 +64,10 @@ class _DoctorIndependientePageState extends State<DoctorIndependientePage> {
     } catch (e) {
       print("Error al cargar el doctor actual: $e");
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
+        SnackBar(
+          content: Text("Error: $e"),
+          backgroundColor: AppColors.error,
+        ),
       );
     } finally {
       setState(() => _cargando = false);
@@ -78,327 +83,380 @@ class _DoctorIndependientePageState extends State<DoctorIndependientePage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[100],
-      appBar: AppBar(
-        title: const Text("Inicio del Doctor"),
-        centerTitle: true,
-        backgroundColor: Colors.blue.shade700,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.logout),
-            onPressed: _cerrarSesion,
-            tooltip: 'Cerrar sesión',
-          ),
-        ],
-      ),
+      backgroundColor: AppColors.background,
       body: _cargando
           ? const Center(child: CircularProgressIndicator())
           : _doctorActual == null
           ? const Center(child: Text("No se encontró información del doctor"))
           : RefreshIndicator(
               onRefresh: _cargarDoctorActual,
-              child: SingleChildScrollView(
-                physics: const AlwaysScrollableScrollPhysics(),
-                padding: const EdgeInsets.all(16),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    _encabezadoPerfil(),
-                    const SizedBox(height: 20),
-
-                    if (_empresaAsociada != null) ...[
-                      _seccionEmpresaAsociada(),
-                      const SizedBox(height: 20),
+              color: AppColors.primary,
+              child: CustomScrollView(
+                slivers: [
+                  // App Bar con gradiente
+                  SliverAppBar(
+                    expandedHeight: 200,
+                    floating: false,
+                    pinned: true,
+                    backgroundColor: AppColors.primary,
+                    flexibleSpace: FlexibleSpaceBar(
+                      background: Container(
+                        decoration: BoxDecoration(
+                          gradient: AppColors.primaryGradient,
+                        ),
+                        child: SafeArea(
+                          child: Padding(
+                            padding: const EdgeInsets.all(24),
+                            child: Column(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(4),
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        border: Border.all(
+                                          color: Colors.white,
+                                          width: 3,
+                                        ),
+                                      ),
+                                      child: const CircleAvatar(
+                                        radius: 36,
+                                        backgroundColor: Colors.white,
+                                        child: Icon(
+                                          Icons.person,
+                                          size: 40,
+                                          color: AppColors.primary,
+                                        ),
+                                      ),
+                                    ),
+                                    const SizedBox(width: 16),
+                                    Expanded(
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Text(
+                                            "${_doctorActual!.nombres} ${_doctorActual!.apellidos}",
+                                            style: const TextStyle(
+                                              color: Colors.white,
+                                              fontSize: 20,
+                                              fontWeight: FontWeight.bold,
+                                            ),
+                                          ),
+                                          if (_doctorActual!.especialidades
+                                              .isNotEmpty)
+                                            Text(
+                                              _doctorActual!.especialidades.first,
+                                              style: const TextStyle(
+                                                color: Colors.white70,
+                                                fontSize: 14,
+                                              ),
+                                            ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ),
+                    ),
+                    actions: [
+                      IconButton(
+                        icon: const Icon(Icons.logout),
+                        onPressed: _cerrarSesion,
+                        tooltip: 'Cerrar sesión',
+                      ),
                     ],
+                  ),
 
-                    // Acciones principales
-                    _accionesPrincipales(),
-                    const SizedBox(height: 20),
+                  // Contenido
+                  SliverPadding(
+                    padding: const EdgeInsets.all(16),
+                    sliver: SliverList(
+                      delegate: SliverChildListDelegate([
+                        // Empresa asociada
+                        if (_empresaAsociada != null) ...[
+                          AppCard(
+                            padding: const EdgeInsets.all(20),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    Container(
+                                      padding: const EdgeInsets.all(12),
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary.withOpacity(0.1),
+                                        borderRadius: BorderRadius.circular(12),
+                                      ),
+                                      child: const Icon(
+                                        Icons.business,
+                                        color: AppColors.primary,
+                                        size: 24,
+                                      ),
+                                    ),
+                                    const SizedBox(width: 12),
+                                    const Expanded(
+                                      child: Text(
+                                        "Empresa Asociada",
+                                        style: TextStyle(
+                                          fontSize: 18,
+                                          fontWeight: FontWeight.bold,
+                                          color: AppColors.textPrimary,
+                                        ),
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                                const Divider(height: 24),
+                                _infoRow(
+                                  "Razón Social:",
+                                  _empresaAsociada!.razonSocial,
+                                ),
+                                _infoRow("NIT:", _empresaAsociada!.nit),
+                                _infoRow(
+                                  "Teléfono:",
+                                  _empresaAsociada!.telefono,
+                                ),
+                                _infoRow("Ciudad:", _empresaAsociada!.ciudad),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 20),
+                        ],
 
-                    _seccionInfoPersonal(),
-                    const SizedBox(height: 20),
-                    _seccionInfoProfesional(),
-                  ],
-                ),
+                        // Título de acciones
+                        const Padding(
+                          padding: EdgeInsets.only(left: 4, bottom: 12),
+                          child: Text(
+                            "Acciones Rápidas",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+
+                        // Botones de acciones principales
+                        Row(
+                          children: [
+                            Expanded(
+                              child: _accionCard(
+                                Icons.people,
+                                "Pacientes",
+                                AppColors.primary,
+                                () => Navigator.pushNamed(context, '/pacientes'),
+                              ),
+                            ),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: _accionCard(
+                                Icons.medical_services,
+                                "Análisis",
+                                AppColors.secondary,
+                                () => Navigator.pushNamed(context, '/analisis'),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 12),
+
+                        AppCard(
+                          onTap: () async {
+                            if (_doctorActual!.empresaId != null &&
+                                _doctorActual!.empresaId!.isNotEmpty) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                    "Los doctores asociados a una empresa no pueden editar su perfil.",
+                                  ),
+                                  backgroundColor: AppColors.warning,
+                                ),
+                              );
+                              return;
+                            }
+
+                            final actualizado = await _mostrarModalEditarDoctor(
+                              _doctorActual!,
+                            );
+
+                            if (actualizado == true) {
+                              await _cargarDoctorActual();
+                            }
+                          },
+                          child: Row(
+                            children: [
+                              Container(
+                                padding: const EdgeInsets.all(12),
+                                decoration: BoxDecoration(
+                                  color: AppColors.info.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                child: const Icon(
+                                  Icons.edit,
+                                  color: AppColors.info,
+                                  size: 24,
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              const Expanded(
+                                child: Text(
+                                  "Editar Perfil",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: AppColors.textPrimary,
+                                  ),
+                                ),
+                              ),
+                              const Icon(
+                                Icons.chevron_right,
+                                color: AppColors.textSecondary,
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 24),
+
+                        // Información personal
+                        const Padding(
+                          padding: EdgeInsets.only(left: 4, bottom: 12),
+                          child: Text(
+                            "Información Personal",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+
+                        AppCard(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _infoRow(
+                                "Documento",
+                                _doctorActual!.numeroDocumento,
+                              ),
+                              _infoRow("Teléfono", _doctorActual!.telefono),
+                              _infoRow("Dirección", _doctorActual!.direccion),
+                              _infoRow("Ciudad", _doctorActual!.ciudad),
+                              _infoRow("País", _doctorActual!.pais),
+                              _infoRow("Correo", _doctorActual!.usuario.correo),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 20),
+
+                        // Información profesional
+                        const Padding(
+                          padding: EdgeInsets.only(left: 4, bottom: 12),
+                          child: Text(
+                            "Información Profesional",
+                            style: TextStyle(
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              color: AppColors.textPrimary,
+                            ),
+                          ),
+                        ),
+
+                        AppCard(
+                          padding: const EdgeInsets.all(20),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              _infoRow("Rethus", _doctorActual!.rethus),
+                              _infoRow(
+                                "Tarjeta Profesional",
+                                _doctorActual!.numeroTarjetaProfesional,
+                              ),
+                              _infoRow(
+                                "Año de Graduación",
+                                _doctorActual!.anioGraduacion.toString(),
+                              ),
+                              _infoRow(
+                                "Especialidades",
+                                _doctorActual!.especialidades.join(', '),
+                              ),
+                            ],
+                          ),
+                        ),
+
+                        const SizedBox(height: 40),
+                      ]),
+                    ),
+                  ),
+                ],
               ),
             ),
     );
   }
 
-  Widget _encabezadoPerfil() {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: [Colors.blue.shade700, Colors.blue.shade400],
-        ),
-        borderRadius: BorderRadius.circular(16),
-        boxShadow: [BoxShadow(color: Colors.black26, blurRadius: 5)],
-      ),
-      child: Row(
+  Widget _accionCard(IconData icon, String label, Color color, VoidCallback onTap) {
+    return AppCard(
+      onTap: onTap,
+      child: Column(
         children: [
-          const CircleAvatar(
-            radius: 40,
-            backgroundColor: Colors.white,
-            child: Icon(Icons.person, size: 45, color: Colors.blue),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  "${_doctorActual!.nombres} ${_doctorActual!.apellidos}",
-                  style: const TextStyle(
-                    color: Colors.white,
-                    fontSize: 22,
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                if (_doctorActual!.especialidades.isNotEmpty)
-                  Text(
-                    _doctorActual!.especialidades.first,
-                    style: const TextStyle(color: Colors.white70, fontSize: 16),
-                  ),
-              ],
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.1),
+              shape: BoxShape.circle,
             ),
+            child: Icon(icon, color: color, size: 32),
+          ),
+          const SizedBox(height: 12),
+          Text(
+            label,
+            style: TextStyle(
+              color: color,
+              fontWeight: FontWeight.w600,
+              fontSize: 15,
+            ),
+            textAlign: TextAlign.center,
           ),
         ],
       ),
     );
   }
 
-  Widget _seccionEmpresaAsociada() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 3,
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          borderRadius: BorderRadius.circular(12),
-          gradient: LinearGradient(
-            colors: [Colors.indigo.shade50, Colors.white],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(8),
-                  decoration: BoxDecoration(
-                    color: Colors.indigo,
-                    borderRadius: BorderRadius.circular(8),
-                  ),
-                  child: const Icon(
-                    Icons.business,
-                    color: Colors.white,
-                    size: 24,
-                  ),
-                ),
-                const SizedBox(width: 12),
-                const Text(
-                  "Empresa Asociada",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-              ],
-            ),
-            const Divider(height: 24),
-            _fila("🏢 Razón Social:", _empresaAsociada!.razonSocial),
-            _fila("🆔 NIT:", _empresaAsociada!.nit),
-            _fila("📞 Teléfono:", _empresaAsociada!.telefono),
-            _fila("🌍 Ciudad:", _empresaAsociada!.ciudad),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _accionesPrincipales() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Padding(
-          padding: EdgeInsets.only(left: 4, bottom: 12),
-          child: Text(
-            "Acciones Rápidas",
-            style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-          ),
-        ),
-        Row(
-          children: [
-            Expanded(
-              child: _botonAccionGrande(
-                Icons.people,
-                "Pacientes",
-                Colors.blue,
-                () => Navigator.pushNamed(context, '/pacientes'),
-              ),
-            ),
-            const SizedBox(width: 12),
-            Expanded(
-              child: _botonAccionGrande(
-                Icons.medical_services,
-                "Análisis",
-                Colors.orange,
-                () => Navigator.pushNamed(context, '/analisis'),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        SizedBox(
-          width: double.infinity,
-          child: _botonAccionGrande(
-            Icons.edit,
-            "Editar Perfil",
-            Colors.green,
-            () async {
-              if (_doctorActual!.empresaId != null &&
-                  _doctorActual!.empresaId!.isNotEmpty) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
-                    content: Text(
-                      "Los doctores asociados a una empresa no pueden editar su perfil.",
-                    ),
-                    backgroundColor: Colors.orange,
-                  ),
-                );
-                return;
-              }
-
-              final actualizado = await _mostrarModalEditarDoctor(
-                _doctorActual!,
-              );
-
-              if (actualizado == true) {
-                await _cargarDoctorActual();
-              }
-            },
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _botonAccionGrande(
-    IconData icono,
-    String texto,
-    Color color,
-    VoidCallback onTap,
-  ) {
-    return Card(
-      elevation: 2,
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(12),
-        child: Container(
-          padding: const EdgeInsets.symmetric(vertical: 20, horizontal: 16),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.1),
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(icono, color: color, size: 32),
-              ),
-              const SizedBox(height: 12),
-              Text(
-                texto,
-                style: TextStyle(
-                  color: color,
-                  fontWeight: FontWeight.w600,
-                  fontSize: 15,
-                ),
-                textAlign: TextAlign.center,
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _seccionInfoPersonal() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 3,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Información Personal",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const Divider(),
-            _fila("Documento", _doctorActual!.numeroDocumento),
-            _fila("Teléfono", _doctorActual!.telefono),
-            _fila("Dirección", _doctorActual!.direccion),
-            _fila("Ciudad", _doctorActual!.ciudad),
-            _fila("País", _doctorActual!.pais),
-            _fila("Correo", _doctorActual!.usuario.correo),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _seccionInfoProfesional() {
-    return Card(
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-      elevation: 3,
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text(
-              "Información Profesional",
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const Divider(),
-            _fila("Rethus", _doctorActual!.rethus),
-            _fila(
-              "Tarjeta Profesional",
-              _doctorActual!.numeroTarjetaProfesional,
-            ),
-            _fila(
-              "Año de Graduación",
-              _doctorActual!.anioGraduacion.toString(),
-            ),
-            _fila("Especialidades", _doctorActual!.especialidades.join(', ')),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _fila(String label, String value) {
+  Widget _infoRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          Expanded(
+            flex: 2,
+            child: Text(
+              label,
+              style: const TextStyle(
+                fontWeight: FontWeight.w600,
+                color: AppColors.textSecondary,
+                fontSize: 14,
+              ),
+            ),
+          ),
           Expanded(
             flex: 3,
             child: Text(
-              "$label:",
-              style: const TextStyle(fontWeight: FontWeight.w600),
-            ),
-          ),
-          Expanded(
-            flex: 5,
-            child: Text(
               value.isNotEmpty ? value : "No especificado",
-              style: const TextStyle(color: Colors.grey),
+              style: const TextStyle(
+                color: AppColors.textPrimary,
+                fontSize: 14,
+              ),
             ),
           ),
         ],
@@ -420,8 +478,9 @@ class _DoctorIndependientePageState extends State<DoctorIndependientePage> {
     return showModalBottomSheet<bool>(
       context: context,
       isScrollControlled: true,
+      backgroundColor: AppColors.background,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
       builder: (context) {
         return StatefulBuilder(
@@ -429,9 +488,9 @@ class _DoctorIndependientePageState extends State<DoctorIndependientePage> {
             return Padding(
               padding: EdgeInsets.only(
                 bottom: MediaQuery.of(context).viewInsets.bottom,
-                top: 20,
-                left: 20,
-                right: 20,
+                top: 24,
+                left: 24,
+                right: 24,
               ),
               child: SingleChildScrollView(
                 child: Form(
@@ -444,21 +503,39 @@ class _DoctorIndependientePageState extends State<DoctorIndependientePage> {
                         child: Text(
                           "Editar Información Personal",
                           style: TextStyle(
-                            fontSize: 18,
+                            fontSize: 20,
                             fontWeight: FontWeight.bold,
+                            color: AppColors.textPrimary,
                           ),
                         ),
                       ),
-                      const SizedBox(height: 20),
-                      _campoTexto("Teléfono", telefonoController),
+                      const SizedBox(height: 24),
+                      AppTextField(
+                        label: "Teléfono",
+                        controller: telefonoController,
+                        prefixIcon: Icons.phone,
+                      ),
                       const SizedBox(height: 16),
-                      _campoTexto("Dirección", direccionController),
+                      AppTextField(
+                        label: "Dirección",
+                        controller: direccionController,
+                        prefixIcon: Icons.home,
+                      ),
                       const SizedBox(height: 16),
-                      _campoTexto("Ciudad", ciudadController),
+                      AppTextField(
+                        label: "Ciudad",
+                        controller: ciudadController,
+                        prefixIcon: Icons.location_city,
+                      ),
                       const SizedBox(height: 16),
-                      _campoTexto("País", paisController),
-                      const SizedBox(height: 25),
-                      ElevatedButton.icon(
+                      AppTextField(
+                        label: "País",
+                        controller: paisController,
+                        prefixIcon: Icons.flag,
+                      ),
+                      const SizedBox(height: 24),
+                      AppPrimaryButton(
+                        text: "Guardar cambios",
                         onPressed: guardando
                             ? null
                             : () async {
@@ -505,7 +582,7 @@ class _DoctorIndependientePageState extends State<DoctorIndependientePage> {
                                         content: Text(
                                           "Perfil actualizado correctamente",
                                         ),
-                                        backgroundColor: Colors.green,
+                                        backgroundColor: AppColors.success,
                                       ),
                                     );
                                   }
@@ -515,7 +592,7 @@ class _DoctorIndependientePageState extends State<DoctorIndependientePage> {
                                     ScaffoldMessenger.of(context).showSnackBar(
                                       SnackBar(
                                         content: Text("Error al guardar: $e"),
-                                        backgroundColor: Colors.red,
+                                        backgroundColor: AppColors.error,
                                       ),
                                     );
                                   }
@@ -523,22 +600,10 @@ class _DoctorIndependientePageState extends State<DoctorIndependientePage> {
                                   setModalState(() => guardando = false);
                                 }
                               },
-                        icon: guardando
-                            ? const SizedBox(
-                                height: 18,
-                                width: 18,
-                                child: CircularProgressIndicator(
-                                  strokeWidth: 2,
-                                ),
-                              )
-                            : const Icon(Icons.save),
-                        label: const Text("Guardar cambios"),
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.blue.shade700,
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                        ),
+                        isLoading: guardando,
+                        icon: Icons.save,
                       ),
-                      const SizedBox(height: 20),
+                      const SizedBox(height: 24),
                     ],
                   ),
                 ),
@@ -546,26 +611,6 @@ class _DoctorIndependientePageState extends State<DoctorIndependientePage> {
             );
           },
         );
-      },
-    );
-  }
-
-  Widget _campoTexto(String label, TextEditingController controller) {
-    return TextFormField(
-      controller: controller,
-      decoration: InputDecoration(
-        labelText: label,
-        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10)),
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 12,
-          vertical: 10,
-        ),
-      ),
-      validator: (value) {
-        if (value == null || value.trim().isEmpty) {
-          return "Ingrese $label";
-        }
-        return null;
       },
     );
   }
