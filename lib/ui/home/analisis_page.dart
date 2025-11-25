@@ -21,18 +21,12 @@ class AnalisisFormPage extends StatefulWidget {
 class _AnalisisFormPageState extends State<AnalisisFormPage> {
   final AnalisisController _controller = AnalisisController();
   final _observacionesController = TextEditingController();
-
   File? _imagenSeleccionada;
   bool _isLoading = false;
   String _tipoAnalisis = 'Radiografía de Tórax';
 
   final List<String> _tiposAnalisis = [
-    'Radiografía de Tórax',
-    'Radiografía de Abdomen',
-    'Tomografía',
-    'Resonancia Magnética',
-    'Ecografía',
-    'Otro',
+    'Radiografía de Tórax'
   ];
 
   Future<void> _seleccionarImagen(ImageSource source) async {
@@ -270,7 +264,6 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
       );
     } catch (e) {
       Navigator.pop(context); // Cerrar diálogo
-
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
           content: Text("❌ Error: $e"),
@@ -287,6 +280,8 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
       appBar: AppBar(
         title: const Text('Nuevo Análisis'),
         backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -344,7 +339,6 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
                 ],
               ),
             ),
-
             const SizedBox(height: 24),
 
             // Tipo de análisis
@@ -357,7 +351,6 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
               ),
             ),
             const SizedBox(height: 12),
-            
             DropdownButtonFormField<String>(
               value: _tipoAnalisis,
               decoration: InputDecoration(
@@ -386,7 +379,6 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
                 }
               },
             ),
-
             const SizedBox(height: 24),
 
             // Imagen
@@ -399,11 +391,9 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
               ),
             ),
             const SizedBox(height: 12),
-
             _imagenSeleccionada == null
                 ? _buildSeleccionarImagenCard()
                 : _buildImagenPreview(),
-
             const SizedBox(height: 24),
 
             // Observaciones
@@ -416,13 +406,11 @@ class _AnalisisFormPageState extends State<AnalisisFormPage> {
               ),
             ),
             const SizedBox(height: 12),
-            
             AppTextField(
               controller: _observacionesController,
               maxLines: 4,
               label: 'Agregue observaciones sobre el análisis...',
             ),
-
             const SizedBox(height: 32),
 
             // Botón

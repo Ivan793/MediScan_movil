@@ -123,128 +123,166 @@ class _PacienteDetallePageState extends State<PacienteDetallePage> {
 
   @override
   Widget build(BuildContext context) {
+    // Obtener dimensiones de la pantalla
+    final screenHeight = MediaQuery.of(context).size.height;
+    final screenWidth = MediaQuery.of(context).size.width;
+    
+    // Calcular tamaños responsive
+    final avatarRadius = screenWidth < 360 ? 35.0 : screenWidth < 400 ? 38.0 : 40.0;
+    final nameFontSize = screenWidth < 360 ? 20.0 : screenWidth < 400 ? 22.0 : 24.0;
+    final infoBadgeFontSize = screenWidth < 360 ? 12.0 : 14.0;
+    final iconSize = screenWidth < 360 ? 14.0 : 16.0;
+    final expandedHeight = screenHeight < 600 ? 200.0 : screenHeight < 800 ? 220.0 : 240.0;
+    final horizontalPadding = screenWidth < 360 ? 12.0 : 16.0;
+    
     return Scaffold(
       backgroundColor: AppColors.background,
       body: CustomScrollView(
         slivers: [
-          // App Bar con gradiente y avatar
+          // AppBar responsive
           SliverAppBar(
-            expandedHeight: 200,
+            expandedHeight: expandedHeight,
             floating: false,
             pinned: true,
             backgroundColor: AppColors.primary,
-            flexibleSpace: FlexibleSpaceBar(
-              background: Container(
-                decoration: BoxDecoration(
-                  gradient: AppColors.primaryGradient,
-                ),
-                child: SafeArea(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(4),
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 3),
-                          boxShadow: AppColors.elevatedShadow,
-                        ),
-                        child: CircleAvatar(
-                          radius: 40,
-                          backgroundColor: Colors.white,
-                          child: Text(
-                            widget.paciente.nombres[0].toUpperCase() +
-                                widget.paciente.apellidos[0].toUpperCase(),
-                            style: TextStyle(
-                              color: AppColors.primary,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 32,
-                            ),
+            leading: IconButton(
+              icon: const Icon(Icons.arrow_back, color: Colors.white),
+              onPressed: () => Navigator.pop(context),
+            ),
+            flexibleSpace: LayoutBuilder(
+              builder: (context, constraints) {
+                final double top = constraints.biggest.height;
+                final double collapsedHeight = kToolbarHeight;
+                final double expandedHeightValue = expandedHeight + MediaQuery.of(context).padding.top;
+                
+                // Factor de opacidad para fade out al colapsar
+                final double opacity = ((top - collapsedHeight) / 
+                    (expandedHeightValue - collapsedHeight)).clamp(0.0, 1.0);
+                
+                return FlexibleSpaceBar(
+                  background: Container(
+                    decoration: BoxDecoration(
+                      gradient: AppColors.primaryGradient,
+                    ),
+                    child: SafeArea(
+                      child: Opacity(
+                        opacity: opacity,
+                        child: Padding(
+                          padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                          child: Column(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              // Avatar
+                              Container(
+                                padding: const EdgeInsets.all(3),
+                                decoration: BoxDecoration(
+                                  shape: BoxShape.circle,
+                                  border: Border.all(
+                                    color: Colors.white,
+                                    width: screenWidth < 360 ? 2 : 3,
+                                  ),
+                                  boxShadow: AppColors.elevatedShadow,
+                                ),
+                                child: CircleAvatar(
+                                  radius: avatarRadius,
+                                  backgroundColor: Colors.white,
+                                  child: Text(
+                                    widget.paciente.nombres[0].toUpperCase() +
+                                        widget.paciente.apellidos[0].toUpperCase(),
+                                    style: TextStyle(
+                                      color: AppColors.primary,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: avatarRadius * 0.8,
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              SizedBox(height: screenHeight < 600 ? 12 : 16),
+                              
+                              // Nombre
+                              Padding(
+                                padding: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                                child: Text(
+                                  widget.paciente.nombreCompleto,
+                                  style: TextStyle(
+                                    fontSize: nameFontSize,
+                                    fontWeight: FontWeight.bold,
+                                    color: Colors.white,
+                                    height: 1.2,
+                                  ),
+                                  textAlign: TextAlign.center,
+                                  maxLines: 2,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              const SizedBox(height: 8),
+                              
+                              // Badge con edad y género - Layout flexible
+                              Container(
+                                margin: EdgeInsets.symmetric(horizontal: horizontalPadding),
+                                padding: EdgeInsets.symmetric(
+                                  horizontal: screenWidth < 360 ? 12 : 16,
+                                  vertical: screenWidth < 360 ? 5 : 6,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: Colors.white.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(20),
+                                ),
+                                child: Row(
+                                  mainAxisSize: MainAxisSize.min,
+                                  children: [
+                                    Icon(Icons.cake, color: Colors.white, size: iconSize),
+                                    SizedBox(width: screenWidth < 360 ? 4 : 6),
+                                    Flexible(
+                                      child: Text(
+                                        '${widget.paciente.edad} años',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: infoBadgeFontSize,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                    SizedBox(width: screenWidth < 360 ? 8 : 12),
+                                    Icon(
+                                      widget.paciente.genero?.toLowerCase() == 'masculino'
+                                          ? Icons.male
+                                          : Icons.female,
+                                      color: Colors.white,
+                                      size: iconSize,
+                                    ),
+                                    SizedBox(width: screenWidth < 360 ? 4 : 6),
+                                    Flexible(
+                                      child: Text(
+                                        widget.paciente.genero ?? '',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontSize: infoBadgeFontSize,
+                                          fontWeight: FontWeight.w500,
+                                        ),
+                                        overflow: TextOverflow.ellipsis,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              SizedBox(height: screenHeight < 600 ? 16 : 24),
+                            ],
                           ),
                         ),
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        widget.paciente.nombreCompleto,
-                        style: const TextStyle(
-                          fontSize: 24,
-                          fontWeight: FontWeight.bold,
-                          color: Colors.white,
-                        ),
-                        textAlign: TextAlign.center,
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            const Icon(Icons.cake, color: Colors.white, size: 16),
-                            const SizedBox(width: 6),
-                            Text(
-                              '${widget.paciente.edad} años',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                            const SizedBox(width: 12),
-                            Icon(
-                              widget.paciente.genero?.toLowerCase() == 'masculino'
-                                  ? Icons.male
-                                  : Icons.female,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                            const SizedBox(width: 6),
-                            Text(
-                              widget.paciente.genero ?? '',
-                              style: const TextStyle(
-                                color: Colors.white,
-                                fontSize: 14,
-                                fontWeight: FontWeight.w500,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(height: 24),
-                    ],
+                    ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
-            actions: [
-              IconButton(
-                icon: const Icon(Icons.edit),
-                tooltip: 'Editar',
-                onPressed: () async {
-                  final resultado = await Navigator.pushNamed(
-                    context,
-                    '/registrar-paciente',
-                    arguments: widget.paciente,
-                  );
-                  if (resultado == true && mounted) {
-                    setState(() {});
-                  }
-                },
-              ),
-              IconButton(
-                icon: const Icon(Icons.delete),
-                tooltip: 'Eliminar',
-                onPressed: _eliminarPaciente,
-              ),
-            ],
+            actions: const [], 
           ),
 
-          // Contenido
+          // Contenido con padding responsive
           SliverPadding(
-            padding: const EdgeInsets.all(16),
+            padding: EdgeInsets.all(horizontalPadding),
             sliver: SliverList(
               delegate: SliverChildListDelegate([
                 _buildSeccion(
@@ -264,7 +302,7 @@ class _PacienteDetallePageState extends State<PacienteDetallePage> {
                   ],
                 ),
 
-                const SizedBox(height: 16),
+                SizedBox(height: horizontalPadding),
 
                 _buildSeccion(
                   'Contacto',
@@ -279,7 +317,7 @@ class _PacienteDetallePageState extends State<PacienteDetallePage> {
                   ],
                 ),
 
-                const SizedBox(height: 16),
+                SizedBox(height: horizontalPadding),
 
                 _buildSeccion(
                   'Información Médica',
@@ -321,7 +359,7 @@ class _PacienteDetallePageState extends State<PacienteDetallePage> {
                   ],
                 ),
 
-                const SizedBox(height: 16),
+                SizedBox(height: horizontalPadding),
 
                 _buildSeccion(
                   'Registro',
@@ -337,51 +375,103 @@ class _PacienteDetallePageState extends State<PacienteDetallePage> {
 
                 const SizedBox(height: 24),
 
-                // Botones de acción
-                Row(
-                  children: [
-                    Expanded(
-                      child: AppSecondaryButton(
-                        text: 'Editar',
-                        onPressed: () async {
-                          final resultado = await Navigator.pushNamed(
-                            context,
-                            '/registrar-paciente',
-                            arguments: widget.paciente,
-                          );
-                          if (resultado == true && mounted) {
-                            setState(() {});
-                          }
-                        },
-                        icon: Icons.edit,
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: ElevatedButton.icon(
-                        onPressed: _eliminarPaciente,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.error,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
+                // Botones de acción responsive
+                screenWidth < 360
+                    ? Column(
+                        children: [
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: AppSecondaryButton(
+                              text: 'Editar',
+                              onPressed: () async {
+                                final resultado = await Navigator.pushNamed(
+                                  context,
+                                  '/registrar-paciente',
+                                  arguments: widget.paciente,
+                                );
+                                if (resultado == true && mounted) {
+                                  setState(() {});
+                                }
+                              },
+                              icon: Icons.edit,
+                            ),
                           ),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                        ),
-                        icon: const Icon(Icons.delete, size: 20),
-                        label: const Text(
-                          'Eliminar',
-                          style: TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.w600,
+                          const SizedBox(height: 12),
+                          SizedBox(
+                            width: double.infinity,
+                            height: 48,
+                            child: ElevatedButton.icon(
+                              onPressed: _eliminarPaciente,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: AppColors.error,
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                              ),
+                              icon: const Icon(Icons.delete, size: 18),
+                              label: const Text(
+                                'Eliminar',
+                                style: TextStyle(
+                                  fontSize: 15,
+                                  fontWeight: FontWeight.w600,
+                                ),
+                              ),
+                            ),
                           ),
-                        ),
+                        ],
+                      )
+                    : Row(
+                        children: [
+                          Expanded(
+                            child: SizedBox(
+                              height: 52,
+                              child: AppSecondaryButton(
+                                text: 'Editar',
+                                onPressed: () async {
+                                  final resultado = await Navigator.pushNamed(
+                                    context,
+                                    '/registrar-paciente',
+                                    arguments: widget.paciente,
+                                  );
+                                  if (resultado == true && mounted) {
+                                    setState(() {});
+                                  }
+                                },
+                                icon: Icons.edit,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: SizedBox(
+                              height: 52,
+                              child: ElevatedButton.icon(
+                                onPressed: _eliminarPaciente,
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: AppColors.error,
+                                  foregroundColor: Colors.white,
+                                  elevation: 0,
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(12),
+                                  ),
+                                ),
+                                icon: const Icon(Icons.delete, size: 20),
+                                label: const Text(
+                                  'Eliminar',
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-                
+
                 const SizedBox(height: 40),
               ]),
             ),
@@ -392,28 +482,38 @@ class _PacienteDetallePageState extends State<PacienteDetallePage> {
   }
 
   Widget _buildSeccion(String titulo, IconData icon, List<Widget> children) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final sectionPadding = screenWidth < 360 ? 16.0 : 20.0;
+    final titleFontSize = screenWidth < 360 ? 16.0 : 18.0;
+    final iconBoxSize = screenWidth < 360 ? 6.0 : 8.0;
+    final iconSizeValue = screenWidth < 360 ? 18.0 : 20.0;
+    
     return AppCard(
-      padding: const EdgeInsets.all(20),
+      padding: EdgeInsets.all(sectionPadding),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Row(
             children: [
               Container(
-                padding: const EdgeInsets.all(8),
+                padding: EdgeInsets.all(iconBoxSize),
                 decoration: BoxDecoration(
                   color: AppColors.primary.withOpacity(0.1),
                   borderRadius: BorderRadius.circular(8),
                 ),
-                child: Icon(icon, color: AppColors.primary, size: 20),
+                child: Icon(icon, color: AppColors.primary, size: iconSizeValue),
               ),
               const SizedBox(width: 12),
-              Text(
-                titulo,
-                style: const TextStyle(
-                  fontSize: 18,
-                  fontWeight: FontWeight.bold,
-                  color: AppColors.textPrimary,
+              Expanded(
+                child: Text(
+                  titulo,
+                  style: TextStyle(
+                    fontSize: titleFontSize,
+                    fontWeight: FontWeight.bold,
+                    color: AppColors.textPrimary,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                 ),
               ),
             ],
@@ -426,12 +526,17 @@ class _PacienteDetallePageState extends State<PacienteDetallePage> {
   }
 
   Widget _buildInfoRow(IconData icon, String label, String value) {
+    final screenWidth = MediaQuery.of(context).size.width;
+    final iconSizeValue = screenWidth < 360 ? 18.0 : 20.0;
+    final labelFontSize = screenWidth < 360 ? 11.0 : 12.0;
+    final valueFontSize = screenWidth < 360 ? 14.0 : 15.0;
+    
     return Padding(
-      padding: const EdgeInsets.only(bottom: 16),
+      padding: EdgeInsets.only(bottom: screenWidth < 360 ? 12 : 16),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, size: 20, color: AppColors.textSecondary),
+          Icon(icon, size: iconSizeValue, color: AppColors.textSecondary),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -439,8 +544,8 @@ class _PacienteDetallePageState extends State<PacienteDetallePage> {
               children: [
                 Text(
                   label,
-                  style: const TextStyle(
-                    fontSize: 12,
+                  style: TextStyle(
+                    fontSize: labelFontSize,
                     color: AppColors.textSecondary,
                     fontWeight: FontWeight.w500,
                   ),
@@ -448,11 +553,13 @@ class _PacienteDetallePageState extends State<PacienteDetallePage> {
                 const SizedBox(height: 4),
                 Text(
                   value,
-                  style: const TextStyle(
-                    fontSize: 15,
+                  style: TextStyle(
+                    fontSize: valueFontSize,
                     fontWeight: FontWeight.w600,
                     color: AppColors.textPrimary,
                   ),
+                  overflow: TextOverflow.visible,
+                  softWrap: true,
                 ),
               ],
             ),

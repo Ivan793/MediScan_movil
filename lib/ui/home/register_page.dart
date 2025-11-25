@@ -37,8 +37,6 @@ class _RegisterPageState extends State<RegisterPage> {
     'anioGraduacion': TextEditingController(),
     'correo': TextEditingController(),
     'contrasenia': TextEditingController(),
-
-    // Empresa
     'razonSocial': TextEditingController(),
     'nit': TextEditingController(),
     'licencia': TextEditingController(),
@@ -49,9 +47,9 @@ class _RegisterPageState extends State<RegisterPage> {
   };
 
   bool _isLoading = false;
+  bool _obscurePassword = true;
 
   // ---------------- VALIDADORES ----------------
-
   String? validarNombre(String? v) {
     if (v == null || v.isEmpty) return 'Campo requerido';
     if (v.length < 3) return 'Mínimo 3 caracteres';
@@ -62,9 +60,7 @@ class _RegisterPageState extends State<RegisterPage> {
   String? validarNumeroDocumento(String? v) {
     if (v == null || v.isEmpty) return 'Campo requerido';
     if (v.length < 6) return 'Mínimo 6 caracteres';
-
     final tipo = _controllers['tipoDocumento']!.text;
-
     if (tipo == "Cédula de Ciudadanía") {
       if (!RegExp(r'^[0-9]+$').hasMatch(v)) return 'Solo números para C.C.';
     } else {
@@ -103,19 +99,17 @@ class _RegisterPageState extends State<RegisterPage> {
   String? validarCorreo(String? v) {
     if (v == null || v.isEmpty) return 'Campo requerido';
     if (!v.contains('@')) return 'Debe contener @';
-
     final domain = v.split("@").last;
     final dots = ".".allMatches(domain).length;
-
     if (dots < 1 || dots > 2) return 'Dominio inválido (1–2 puntos)';
-
     return null;
   }
 
   String? validarCorreoInstitucional(String? v) {
     if (v == null || v.isEmpty) return 'Campo requerido';
-    if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$')
-        .hasMatch(v)) return 'Correo institucional inválido';
+    if (!RegExp(r'^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$').hasMatch(v)) {
+      return 'Correo institucional inválido';
+    }
     return null;
   }
 
@@ -149,163 +143,234 @@ class _RegisterPageState extends State<RegisterPage> {
   }
 
   String? validarRazonSocial(String? value) {
-    if (value == null || value.isEmpty) {
-      return 'La razón social es obligatoria';
-    }
-
-    if (value.length > 30) {
-      return 'Máximo 30 caracteres';
-    }
-
+    if (value == null || value.isEmpty) return 'La razón social es obligatoria';
+    if (value.length > 30) return 'Máximo 30 caracteres';
     return null;
   }
 
-
   // -------------- INPUT DECORATION ----------------
-  InputDecoration _inputDecoration(String label) {
+  InputDecoration _inputDecoration(String label, IconData icon) {
     return InputDecoration(
       labelText: label,
+      prefixIcon: Icon(icon, color: const Color(0xFF1976D2)),
       border: OutlineInputBorder(
         borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+      ),
+      enabledBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFFE0E0E0)),
+      ),
+      focusedBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Color(0xFF1976D2), width: 2),
+      ),
+      errorBorder: OutlineInputBorder(
+        borderRadius: BorderRadius.circular(12),
+        borderSide: const BorderSide(color: Colors.red),
       ),
       filled: true,
-      fillColor: Colors.grey.shade100,
+      fillColor: Colors.white,
+      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
     );
   }
 
   // ---------------- WIDGET FIELD ----------------
-  Widget _field(String key, String label,
+  Widget _field(String key, String label, IconData icon,
       {bool obscure = false, String? Function(String?)? validator}) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14.0),
+      padding: const EdgeInsets.only(bottom: 16.0),
       child: TextFormField(
         controller: _controllers[key],
-        obscureText: obscure,
-        decoration: _inputDecoration(label),
-        validator: validator ?? (v) => (v == null || v.isEmpty)
-            ? "Campo requerido"
-            : null,
+        obscureText: obscure && _obscurePassword,
+        decoration: _inputDecoration(label, icon).copyWith(
+          suffixIcon: obscure
+              ? IconButton(
+                  icon: Icon(
+                    _obscurePassword ? Icons.visibility : Icons.visibility_off,
+                    color: const Color(0xFF1976D2),
+                  ),
+                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                )
+              : null,
+        ),
+        validator: validator ?? (v) => (v == null || v.isEmpty) ? "Campo requerido" : null,
+        style: const TextStyle(fontSize: 15),
+      ),
+    );
+  }
+
+  // ---------------- SECCIÓN HEADER ----------------
+  Widget _sectionHeader(String title, IconData icon) {
+    return Padding(
+      padding: const EdgeInsets.only(top: 24, bottom: 16),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: const Color(0xFF1976D2).withOpacity(0.1),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: const Color(0xFF1976D2), size: 24),
+          ),
+          const SizedBox(width: 12),
+          Text(
+            title,
+            style: const TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1976D2),
+            ),
+          ),
+        ],
       ),
     );
   }
 
   // ----------------- CAMPOS ESPECIALES -----------------
-
   Widget campoTipoDocumento() {
-    return DropdownButtonFormField<String>(
-      decoration: _inputDecoration("Tipo Documento *"),
-      items: const [
-        DropdownMenuItem(
-            value: "Cédula de Ciudadanía",
-            child: Text("Cédula de Ciudadanía")),
-        DropdownMenuItem(
-            value: "Cédula de Extranjería",
-            child: Text("Cédula de Extranjería")),
-      ],
-      validator: (v) => v == null ? "Campo requerido" : null,
-      onChanged: (v) {
-        _controllers['tipoDocumento']!.text = v!;
-      },
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: DropdownButtonFormField<String>(
+        decoration: _inputDecoration("Tipo Documento *", Icons.badge),
+        items: const [
+          DropdownMenuItem(value: "Cédula de Ciudadanía", child: Text("Cédula de Ciudadanía")),
+          DropdownMenuItem(value: "Cédula de Extranjería", child: Text("Cédula de Extranjería")),
+        ],
+        validator: (v) => v == null ? "Campo requerido" : null,
+        onChanged: (v) => _controllers['tipoDocumento']!.text = v!,
+        style: const TextStyle(fontSize: 15, color: Colors.black87),
+      ),
     );
   }
 
   Widget campoGenero() {
-    return DropdownButtonFormField<String>(
-      decoration: _inputDecoration("Género *"),
-      items: const [
-        DropdownMenuItem(value: "Masculino", child: Text("Masculino")),
-        DropdownMenuItem(value: "Femenino", child: Text("Femenino")),
-        DropdownMenuItem(value: "Otro", child: Text("Otro")),
-      ],
-      validator: (v) => v == null ? "Campo requerido" : null,
-      onChanged: (v) {
-        _controllers['genero']!.text = v!;
-      },
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: DropdownButtonFormField<String>(
+        decoration: _inputDecoration("Género *", Icons.person),
+        items: const [
+          DropdownMenuItem(value: "Masculino", child: Text("Masculino")),
+          DropdownMenuItem(value: "Femenino", child: Text("Femenino")),
+          DropdownMenuItem(value: "Otro", child: Text("Otro")),
+        ],
+        validator: (v) => v == null ? "Campo requerido" : null,
+        onChanged: (v) => _controllers['genero']!.text = v!,
+        style: const TextStyle(fontSize: 15, color: Colors.black87),
+      ),
     );
   }
 
   Widget campoFechaNacimiento() {
-    return TextFormField(
-      controller: _controllers['fechaNacimiento'],
-      readOnly: true,
-      decoration: _inputDecoration("Fecha Nacimiento *"),
-      validator: (v) => v == null || v.isEmpty ? "Campo requerido" : null,
-      onTap: () async {
-        final picked = await showDatePicker(
-          context: context,
-          initialDate: DateTime(1990),
-          firstDate: DateTime(1900),
-          lastDate: DateTime.now(),
-        );
-        if (picked != null) {
-          _controllers['fechaNacimiento']!.text =
-              picked.toIso8601String().split("T")[0];
-        }
-      },
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: TextFormField(
+        controller: _controllers['fechaNacimiento'],
+        readOnly: true,
+        decoration: _inputDecoration("Fecha Nacimiento *", Icons.calendar_today),
+        validator: (v) => v == null || v.isEmpty ? "Campo requerido" : null,
+        onTap: () async {
+          final picked = await showDatePicker(
+            context: context,
+            initialDate: DateTime(1990),
+            firstDate: DateTime(1900),
+            lastDate: DateTime.now(),
+            builder: (context, child) {
+              return Theme(
+                data: Theme.of(context).copyWith(
+                  colorScheme: const ColorScheme.light(
+                    primary: Color(0xFF1976D2),
+                  ),
+                ),
+                child: child!,
+              );
+            },
+          );
+          if (picked != null) {
+            _controllers['fechaNacimiento']!.text = picked.toIso8601String().split("T")[0];
+          }
+        },
+        style: const TextStyle(fontSize: 15),
+      ),
     );
   }
 
   Widget campoRegimen() {
-    return DropdownButtonFormField<String>(
-      decoration: _inputDecoration("Régimen"),
-      items: const [
-        DropdownMenuItem(
-            value: "Régimen Ordinario", child: Text("Régimen Ordinario")),
-        DropdownMenuItem(value: "Régimen Simple", child: Text("Régimen Simple")),
-        DropdownMenuItem(
-            value: "Régimen Especial (ESAL)",
-            child: Text("Régimen Especial (ESAL)")),
-      ],
-      onChanged: (v) => _controllers['regimen']!.text = v!,
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 16.0),
+      child: DropdownButtonFormField<String>(
+        decoration: _inputDecoration("Régimen", Icons.account_balance),
+        items: const [
+          DropdownMenuItem(value: "Régimen Ordinario", child: Text("Régimen Ordinario")),
+          DropdownMenuItem(value: "Régimen Simple", child: Text("Régimen Simple")),
+          DropdownMenuItem(value: "Régimen Especial (ESAL)", child: Text("Régimen Especial (ESAL)")),
+        ],
+        onChanged: (v) => _controllers['regimen']!.text = v!,
+        style: const TextStyle(fontSize: 15, color: Colors.black87),
+      ),
     );
   }
 
   // ---------------- FORMULARIO DOCTOR ----------------
   Widget _buildDoctorForm() {
-    return Column(children: [
-      _field('nombres', 'Nombres *', validator: validarNombre),
-      _field('apellidos', 'Apellidos *', validator: validarNombre),
-      campoTipoDocumento(),
-      _field('numeroDocumento', 'Número Documento *',
-          validator: validarNumeroDocumento),
-      campoFechaNacimiento(),
-      campoGenero(),
-      _field('telefono', 'Teléfono *', validator: validarTelefono),
-      _field('direccion', 'Dirección *', validator: validarDireccion),
-      _field('ciudad', 'Ciudad *', validator: validarCiudadPais),
-      _field('pais', 'País *', validator: validarCiudadPais),
-      _field('rethus', 'RETHUS *'),
-      _field('tarjetaProfesional', 'Tarjeta Profesional *'),
-      _field('especialidades',
-          'Especialidades * (separadas por coma)'), // admite varias
-      _field('anioGraduacion', 'Año de Graduación *',
-          validator: validarAnioGraduacion),
-      _field('correo', 'Correo electrónico *', validator: validarCorreo),
-      _field('contrasenia', 'Contraseña *',
-          obscure: true, validator: validarContrasenia),
-    ]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('Información Personal', Icons.person_outline),
+        _field('nombres', 'Nombres *', Icons.person, validator: validarNombre),
+        _field('apellidos', 'Apellidos *', Icons.person_outline, validator: validarNombre),
+        campoTipoDocumento(),
+        _field('numeroDocumento', 'Número Documento *', Icons.badge, validator: validarNumeroDocumento),
+        campoFechaNacimiento(),
+        campoGenero(),
+        
+        _sectionHeader('Contacto', Icons.contact_phone),
+        _field('telefono', 'Teléfono *', Icons.phone, validator: validarTelefono),
+        _field('direccion', 'Dirección *', Icons.home, validator: validarDireccion),
+        _field('ciudad', 'Ciudad *', Icons.location_city, validator: validarCiudadPais),
+        _field('pais', 'País *', Icons.flag, validator: validarCiudadPais),
+        
+        _sectionHeader('Información Profesional', Icons.medical_services),
+        _field('rethus', 'RETHUS *', Icons.verified_user),
+        _field('tarjetaProfesional', 'Tarjeta Profesional *', Icons.card_membership),
+        _field('especialidades', 'Especialidades * (separadas por coma)', Icons.local_hospital),
+        _field('anioGraduacion', 'Año de Graduación *', Icons.school, validator: validarAnioGraduacion),
+        
+        _sectionHeader('Credenciales de Acceso', Icons.lock_outline),
+        _field('correo', 'Correo electrónico *', Icons.email, validator: validarCorreo),
+        _field('contrasenia', 'Contraseña *', Icons.lock, obscure: true, validator: validarContrasenia),
+      ],
+    );
   }
 
   // ---------------- FORMULARIO EMPRESA ----------------
   Widget _buildCompanyForm() {
-    return Column(children: [
-      _field('razonSocial', 'Razón Social *', validator: validarRazonSocial),
-      _field('nit', 'NIT *', validator: validarNIT),
-      _field('licencia', 'Licencia de Funcionamiento *',
-          validator: validarLicencia),
-      _field('direccion', 'Dirección *', validator: validarDireccion),
-      _field('ciudad', 'Ciudad *', validator: validarCiudadPais),
-      _field('departamento', 'Departamento *'),
-      _field('pais', 'País *', validator: validarCiudadPais),
-      _field('telefono', 'Teléfono *', validator: validarTelefono),
-      _field('correoContacto', 'Correo de Contacto *',
-          validator: validarCorreoInstitucional),
-      campoRegimen(),
-      _field('ips', 'IPS (opcional)'),
-      _field('correo', 'Correo Usuario *', validator: validarCorreo),
-      _field('contrasenia', 'Contraseña *',
-          obscure: true, validator: validarContrasenia),
-    ]);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        _sectionHeader('Información de Empresa', Icons.business),
+        _field('razonSocial', 'Razón Social *', Icons.business, validator: validarRazonSocial),
+        _field('nit', 'NIT *', Icons.numbers, validator: validarNIT),
+        _field('licencia', 'Licencia de Funcionamiento *', Icons.verified, validator: validarLicencia),
+        
+        _sectionHeader('Ubicación', Icons.location_on),
+        _field('direccion', 'Dirección *', Icons.home, validator: validarDireccion),
+        _field('ciudad', 'Ciudad *', Icons.location_city, validator: validarCiudadPais),
+        _field('departamento', 'Departamento *', Icons.map),
+        _field('pais', 'País *', Icons.flag, validator: validarCiudadPais),
+        
+        _sectionHeader('Información Adicional', Icons.contact_phone),
+        _field('telefono', 'Teléfono *', Icons.phone, validator: validarTelefono),
+        _field('correoContacto', 'Correo de Contacto *', Icons.email, validator: validarCorreoInstitucional),
+        campoRegimen(),
+        _field('ips', 'IPS (opcional)', Icons.local_hospital),
+        
+        _sectionHeader('Credenciales de Acceso', Icons.lock_outline),
+        _field('correo', 'Correo Usuario *', Icons.email, validator: validarCorreo),
+        _field('contrasenia', 'Contraseña *', Icons.lock, obscure: true, validator: validarContrasenia),
+      ],
+    );
   }
 
   // ---------------- REGISTRO ----------------
@@ -333,25 +398,16 @@ class _RegisterPageState extends State<RegisterPage> {
           direccion: _controllers['direccion']!.text,
           ciudad: _controllers['ciudad']!.text,
           pais: _controllers['pais']!.text,
-          fechaNacimiento:
-              DateTime.parse(_controllers['fechaNacimiento']!.text),
+          fechaNacimiento: DateTime.parse(_controllers['fechaNacimiento']!.text),
           genero: _controllers['genero']!.text,
           rethus: _controllers['rethus']!.text,
-          numeroTarjetaProfesional:
-              _controllers['tarjetaProfesional']!.text,
-          especialidades: _controllers['especialidades']!.text
-              .split(',')
-              .map((e) => e.trim())
-              .toList(),
-          anioGraduacion:
-              int.tryParse(_controllers['anioGraduacion']!.text) ?? 0,
+          numeroTarjetaProfesional: _controllers['tarjetaProfesional']!.text,
+          especialidades: _controllers['especialidades']!.text.split(',').map((e) => e.trim()).toList(),
+          anioGraduacion: int.tryParse(_controllers['anioGraduacion']!.text) ?? 0,
           usuario: usuarioCreado,
         );
 
-        await _firestore
-            .collection('doctores')
-            .doc(usuarioCreado.id_usuario)
-            .set(doctor.toMap());
+        await _firestore.collection('doctores').doc(usuarioCreado.id_usuario).set(doctor.toMap());
       } else {
         final empresa = Empresa(
           nit: _controllers['nit']!.text,
@@ -368,26 +424,43 @@ class _RegisterPageState extends State<RegisterPage> {
           ips: _controllers['ips']!.text,
         );
 
-        await _firestore
-            .collection('empresas')
-            .doc(usuarioCreado.id_usuario)
-            .set(empresa.toMap());
+        await _firestore.collection('empresas').doc(usuarioCreado.id_usuario).set(empresa.toMap());
       }
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text("Registro completado correctamente"),
-          backgroundColor: Colors.green,
-        ),
-      );
-      Navigator.pushNamed(context, '/login');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: const [
+                Icon(Icons.check_circle, color: Colors.white),
+                SizedBox(width: 12),
+                Text("Registro completado correctamente"),
+              ],
+            ),
+            backgroundColor: Colors.green,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+        Navigator.pushNamed(context, '/login');
+      }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text("Error al registrar: $e"),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Row(
+              children: [
+                const Icon(Icons.error, color: Colors.white),
+                const SizedBox(width: 12),
+                Expanded(child: Text("Error: $e")),
+              ],
+            ),
+            backgroundColor: Colors.red,
+            behavior: SnackBarBehavior.floating,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          ),
+        );
+      }
     } finally {
       setState(() => _isLoading = false);
     }
@@ -396,103 +469,237 @@ class _RegisterPageState extends State<RegisterPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF9FAFB),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 32),
-        child: Center(
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 480),
-            child: Form(
-              key: _formKey,
-              child: Column(
-                children: [
-                  const Text("MediScan AI",
-                      style:
-                          TextStyle(fontSize: 26, fontWeight: FontWeight.bold)),
-                  const SizedBox(height: 8),
-                  const Text("Crear Cuenta",
-                      style: TextStyle(color: Colors.grey)),
+      backgroundColor: const Color(0xFFF5F6FA),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // Header profesional
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.symmetric(vertical: 32, horizontal: 24),
+                decoration: BoxDecoration(
+                  gradient: LinearGradient(
+                    colors: [
+                      const Color(0xFF1976D2),
+                      const Color(0xFF1976D2).withOpacity(0.8),
+                    ],
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                  ),
+                  boxShadow: [
+                    BoxShadow(
+                      color: const Color(0xFF1976D2).withOpacity(0.3),
+                      blurRadius: 20,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.2),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.local_hospital,
+                        size: 48,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    const Text(
+                      "MediScan AI",
+                      style: TextStyle(
+                        fontSize: 28,
+                        fontWeight: FontWeight.bold,
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    const Text(
+                      "Crear Nueva Cuenta",
+                      style: TextStyle(
+                        fontSize: 16,
+                        color: Colors.white70,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
 
-                  const SizedBox(height: 24),
-
-                  _userTypeSelector(),
-
-                  const SizedBox(height: 24),
-
-                  if (userType == 'doctor') _buildDoctorForm(),
-                  if (userType == 'empresa') _buildCompanyForm(),
-
-                  const SizedBox(height: 24),
-
-                  _isLoading
-                      ? const CircularProgressIndicator()
-                      : SizedBox(
-                          width: double.infinity,
-                          height: 48,
-                          child: ElevatedButton(
-                            onPressed: _register,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.blue.shade600,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
+              // Formulario
+              Container(
+                constraints: const BoxConstraints(maxWidth: 600),
+                padding: const EdgeInsets.all(24),
+                child: Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      // Selector de tipo de usuario
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: _buildUserTypeButton(
+                                'doctor',
+                                'Doctor',
+                                Icons.medical_services,
                               ),
                             ),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: _buildUserTypeButton(
+                                'empresa',
+                                'Empresa',
+                                Icons.business,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Formulario específico
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(16),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.05),
+                              blurRadius: 10,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        padding: const EdgeInsets.all(24),
+                        child: userType == 'doctor' ? _buildDoctorForm() : _buildCompanyForm(),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Botón de registro
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: ElevatedButton(
+                          onPressed: _isLoading ? null : _register,
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1976D2),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 4,
+                          ),
+                          child: _isLoading
+                              ? const SizedBox(
+                                  width: 24,
+                                  height: 24,
+                                  child: CircularProgressIndicator(
+                                    color: Colors.white,
+                                    strokeWidth: 2,
+                                  ),
+                                )
+                              : const Text(
+                                  "Registrarse",
+                                  style: TextStyle(
+                                    fontSize: 16,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.white,
+                                  ),
+                                ),
+                        ),
+                      ),
+
+                      const SizedBox(height: 24),
+
+                      // Link a login
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Text(
+                            "¿Ya tienes cuenta? ",
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                          GestureDetector(
+                            onTap: () => Navigator.pushNamed(context, '/login'),
                             child: const Text(
-                              "Registrar",
+                              "Inicia sesión",
                               style: TextStyle(
-                                  fontSize: 16, fontWeight: FontWeight.w600),
+                                color: Color(0xFF1976D2),
+                                fontWeight: FontWeight.w600,
+                              ),
                             ),
                           ),
-                        ),
+                        ],
+                      ),
 
-                  const SizedBox(height: 12),
-                  GestureDetector(
-                    onTap: () => Navigator.pushNamed(context, '/login'),
-                    child: const Text("¿Ya tienes cuenta? Inicia sesión",
-                        style: TextStyle(
-                            color: Colors.blue,
-                            fontWeight: FontWeight.w600)),
+                      const SizedBox(height: 24),
+                    ],
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
         ),
       ),
     );
   }
 
-  Widget _userTypeSelector() => Row(
-        children: [
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () => setState(() => userType = 'doctor'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    userType == 'doctor' ? Colors.blue : Colors.grey.shade300,
-                foregroundColor:
-                    userType == 'doctor' ? Colors.white : Colors.black,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(50)),
-              ),
-              child: const Text("Doctor"),
+  Widget _buildUserTypeButton(String type, String label, IconData icon) {
+    final isSelected = userType == type;
+    return InkWell(
+      onTap: () => setState(() => userType = type),
+      borderRadius: BorderRadius.circular(12),
+      child: AnimatedContainer(
+        duration: const Duration(milliseconds: 200),
+        padding: const EdgeInsets.symmetric(vertical: 16),
+        decoration: BoxDecoration(
+          color: isSelected ? const Color(0xFF1976D2) : Colors.transparent,
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: isSelected ? Colors.white : Colors.grey,
+              size: 20,
             ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: ElevatedButton(
-              onPressed: () => setState(() => userType = 'empresa'),
-              style: ElevatedButton.styleFrom(
-                backgroundColor:
-                    userType == 'empresa' ? Colors.blue : Colors.grey.shade300,
-                foregroundColor:
-                    userType == 'empresa' ? Colors.white : Colors.black,
-                shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(50)),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? Colors.white : Colors.grey,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.normal,
+                fontSize: 15,
               ),
-              child: const Text("Empresa"),
             ),
-          ),
-        ],
-      );
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  void dispose() {
+    _controllers.forEach((_, controller) => controller.dispose());
+    super.dispose();
+  }
 }

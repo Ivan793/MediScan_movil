@@ -113,6 +113,8 @@ class _PacientesListPageState extends State<PacientesListPage> {
             floating: false,
             pinned: true,
             backgroundColor: AppColors.primary,
+            foregroundColor: Colors.white,
+            iconTheme: const IconThemeData(color: Colors.white),
             flexibleSpace: FlexibleSpaceBar(
               background: Container(
                 decoration: BoxDecoration(
@@ -156,7 +158,7 @@ class _PacientesListPageState extends State<PacientesListPage> {
                                     'Gestiona tu lista de pacientes',
                                     style: TextStyle(
                                       fontSize: 14,
-                                      color: Colors.white70,
+                                      color: Color.fromARGB(179, 255, 255, 255),
                                     ),
                                   ),
                                 ],
@@ -172,7 +174,7 @@ class _PacientesListPageState extends State<PacientesListPage> {
             ),
             actions: [
               IconButton(
-                icon: const Icon(Icons.refresh),
+                icon: const Icon(Icons.refresh, color: Colors.white),
                 onPressed: _cargarPacientes,
                 tooltip: 'Recargar',
               ),
@@ -259,9 +261,9 @@ class _PacientesListPageState extends State<PacientesListPage> {
             _cargarPacientes();
           }
         },
-        backgroundColor: AppColors.primary,
+        backgroundColor: const Color.fromARGB(255, 255, 255, 255),
         icon: const Icon(Icons.person_add),
-        label: const Text('Nuevo Paciente'),
+        label: const Text('Nuevo Paciente'), 
         elevation: 4,
       ),
     );
@@ -307,6 +309,7 @@ class _PacientesListPageState extends State<PacientesListPage> {
                 text: 'Reintentar',
                 onPressed: _cargarPacientes,
                 icon: Icons.refresh,
+                iconColor: Colors.white,
               ),
             ],
           ),

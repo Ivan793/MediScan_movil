@@ -30,7 +30,7 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _inicializar();
   }
 
@@ -94,8 +94,6 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
         return AppColors.success;
       case 'en_proceso':
         return AppColors.warning;
-      case 'pendiente':
-        return AppColors.info;
       default:
         return AppColors.textSecondary;
     }
@@ -107,8 +105,6 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
         return 'Finalizado';
       case 'en_proceso':
         return 'En Proceso';
-      case 'pendiente':
-        return 'Pendiente';
       default:
         return estado;
     }
@@ -118,94 +114,142 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.background,
-      body: NestedScrollView(
-        headerSliverBuilder: (context, innerBoxIsScrolled) {
-          return [
-            SliverAppBar(
-              expandedHeight: 160,
-              floating: false,
-              pinned: true,
-              backgroundColor: AppColors.primary,
-              flexibleSpace: FlexibleSpaceBar(
-                background: Container(
-                  decoration: BoxDecoration(
-                    gradient: AppColors.primaryGradient,
-                  ),
-                  child: SafeArea(
-                    child: Padding(
-                      padding: const EdgeInsets.all(24),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
+      body: Column(
+        children: [
+          // Header con diseño mejorado
+          Container(
+            decoration: BoxDecoration(
+              gradient: AppColors.primaryGradient,
+              boxShadow: [
+                BoxShadow(
+                  color: AppColors.primary.withOpacity(0.3),
+                  blurRadius: 12,
+                  offset: const Offset(0, 4),
+                ),
+              ],
+            ),
+            child: SafeArea(
+              bottom: false,
+              child: Column(
+                children: [
+                  // AppBar con botón de retroceder
+                  Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    child: Row(
+                      children: [
+                        IconButton(
+                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          onPressed: () => Navigator.pop(context),
+                        ),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              Container(
-                                padding: const EdgeInsets.all(12),
-                                decoration: BoxDecoration(
-                                  color: Colors.white.withOpacity(0.2),
-                                  borderRadius: BorderRadius.circular(12),
-                                ),
-                                child: const Icon(
-                                  Icons.analytics,
+                              Text(
+                                'Gestión de Análisis',
+                                style: TextStyle(
+                                  fontSize: 22,
+                                  fontWeight: FontWeight.bold,
                                   color: Colors.white,
-                                  size: 28,
                                 ),
                               ),
-                              const SizedBox(width: 16),
-                              const Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Text(
-                                      'Gestión de Análisis',
-                                      style: TextStyle(
-                                        fontSize: 24,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
-                                      ),
-                                    ),
-                                    Text(
-                                      'Administra los análisis médicos',
-                                      style: TextStyle(
-                                        fontSize: 14,
-                                        color: Colors.white70,
-                                      ),
-                                    ),
-                                  ],
+                              SizedBox(height: 2),
+                              Text(
+                                'Crea y consulta análisis médicos',
+                                style: TextStyle(
+                                  fontSize: 13,
+                                  color: Colors.white70,
                                 ),
                               ),
                             ],
                           ),
-                        ],
-                      ),
+                        ),
+                      ],
                     ),
                   ),
-                ),
-              ),
-              bottom: TabBar(
-                controller: _tabController,
-                labelColor: Colors.white,
-                unselectedLabelColor: Colors.white60,
-                indicatorColor: Colors.white,
-                indicatorWeight: 3,
-                tabs: const [
-                  Tab(icon: Icon(Icons.add_circle), text: "Nuevo"),
-                  Tab(icon: Icon(Icons.history), text: "Historial"),
-                  Tab(icon: Icon(Icons.pending_actions), text: "Pendientes"),
+                  
+                  const SizedBox(height: 8),
+                  
+                  // Tabs rediseñados
+                  Container(
+                    margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: TabBar(
+                      controller: _tabController,
+                      indicator: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(14),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: const Offset(0, 2),
+                          ),
+                        ],
+                      ),
+                      labelColor: AppColors.primary,
+                      unselectedLabelColor: Colors.white,
+                      labelStyle: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 0.3,
+                      ),
+                      unselectedLabelStyle: const TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w500,
+                      ),
+                      indicatorSize: TabBarIndicatorSize.tab,
+                      dividerColor: Colors.transparent,
+                      tabs: [
+                        Tab(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.add_circle_outline,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text("Nuevo"),
+                            ],
+                          ),
+                        ),
+                        Tab(
+                          child: Row(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.history_rounded,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              const Text("Historial"),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
                 ],
               ),
             ),
-          ];
-        },
-        body: TabBarView(
-          controller: _tabController,
-          children: [
-            _buildNuevoAnalisisTab(),
-            _buildHistorialTab(),
-            _buildPendientesTab(),
-          ],
-        ),
+          ),
+          
+          // Contenido de las tabs
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                _buildNuevoAnalisisTab(),
+                _buildHistorialTab(),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -213,41 +257,65 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
   Widget _buildNuevoAnalisisTab() {
     return Column(
       children: [
-        // Buscador
+        // Buscador mejorado
         Container(
-          padding: const EdgeInsets.all(16),
-          color: AppColors.surface,
-          child: TextField(
-            controller: _searchController,
-            onChanged: _filtrarPacientes,
-            decoration: InputDecoration(
-              hintText: 'Buscar paciente...',
-              hintStyle: const TextStyle(color: AppColors.textTertiary),
-              prefixIcon: const Icon(Icons.search, color: AppColors.primary),
-              suffixIcon: _searchController.text.isNotEmpty
-                  ? IconButton(
-                      icon: const Icon(Icons.clear, size: 20),
-                      onPressed: () {
-                        _searchController.clear();
-                        _filtrarPacientes('');
-                      },
-                    )
-                  : null,
-              filled: true,
-              fillColor: AppColors.grey50,
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide.none,
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 12),
+          decoration: BoxDecoration(
+            color: AppColors.surface,
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.05),
+                blurRadius: 4,
+                offset: const Offset(0, 2),
               ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.grey200),
+            ],
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Selecciona un paciente',
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: AppColors.textPrimary,
+                ),
               ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.primary, width: 2),
+              const SizedBox(height: 12),
+              TextField(
+                controller: _searchController,
+                onChanged: _filtrarPacientes,
+                decoration: InputDecoration(
+                  hintText: 'Buscar por nombre o documento...',
+                  hintStyle: const TextStyle(color: AppColors.textTertiary, fontSize: 14),
+                  prefixIcon: const Icon(Icons.search, color: AppColors.primary, size: 22),
+                  suffixIcon: _searchController.text.isNotEmpty
+                      ? IconButton(
+                          icon: const Icon(Icons.clear, size: 20, color: AppColors.textSecondary),
+                          onPressed: () {
+                            _searchController.clear();
+                            _filtrarPacientes('');
+                          },
+                        )
+                      : null,
+                  filled: true,
+                  fillColor: Colors.white,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.grey200, width: 1),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                  ),
+                ),
               ),
-            ),
+            ],
           ),
         ),
 
@@ -262,9 +330,16 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            CircularProgressIndicator(color: AppColors.primary),
+            CircularProgressIndicator(color: AppColors.primary, strokeWidth: 3),
             SizedBox(height: 16),
-            Text('Cargando pacientes...', style: TextStyle(color: AppColors.textSecondary)),
+            Text(
+              'Cargando pacientes...',
+              style: TextStyle(
+                color: AppColors.textSecondary,
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
           ],
         ),
       );
@@ -275,13 +350,38 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.person_off, size: 80, color: AppColors.textTertiary.withOpacity(0.5)),
-            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.grey100,
+                shape: BoxShape.circle,
+              ),
+              child: Icon(
+                _searchController.text.isEmpty ? Icons.person_off : Icons.search_off,
+                size: 64,
+                color: AppColors.textTertiary,
+              ),
+            ),
+            const SizedBox(height: 20),
             Text(
               _searchController.text.isEmpty
                   ? 'No hay pacientes registrados'
                   : 'No se encontraron pacientes',
-              style: const TextStyle(fontSize: 16, color: AppColors.textSecondary),
+              style: const TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: AppColors.textPrimary,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              _searchController.text.isEmpty
+                  ? 'Registra pacientes para crear análisis'
+                  : 'Intenta con otro término de búsqueda',
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.textSecondary,
+              ),
             ),
           ],
         ),
@@ -303,11 +403,18 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
               child: Row(
                 children: [
                   Container(
-                    width: 56,
-                    height: 56,
+                    width: 60,
+                    height: 60,
                     decoration: BoxDecoration(
                       gradient: AppColors.primaryGradient,
-                      borderRadius: BorderRadius.circular(12),
+                      borderRadius: BorderRadius.circular(14),
+                      boxShadow: [
+                        BoxShadow(
+                          color: AppColors.primary.withOpacity(0.3),
+                          blurRadius: 8,
+                          offset: const Offset(0, 2),
+                        ),
+                      ],
                     ),
                     child: Center(
                       child: Text(
@@ -316,7 +423,7 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
-                          fontSize: 20,
+                          fontSize: 22,
                         ),
                       ),
                     ),
@@ -335,26 +442,36 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
                           ),
                         ),
                         const SizedBox(height: 6),
-                        Text(
-                          '${paciente.tipoDocumento}: ${paciente.numeroDocumento}',
-                          style: const TextStyle(
-                            color: AppColors.textSecondary,
-                            fontSize: 13,
-                          ),
+                        Row(
+                          children: [
+                            Icon(
+                              Icons.badge,
+                              size: 14,
+                              color: AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 4),
+                            Text(
+                              '${paciente.tipoDocumento}: ${paciente.numeroDocumento}',
+                              style: const TextStyle(
+                                color: AppColors.textSecondary,
+                                fontSize: 13,
+                              ),
+                            ),
+                          ],
                         ),
                       ],
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.all(8),
+                    padding: const EdgeInsets.all(10),
                     decoration: BoxDecoration(
                       color: AppColors.primary.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(8),
+                      borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(
-                      Icons.arrow_forward,
+                      Icons.arrow_forward_rounded,
                       color: AppColors.primary,
-                      size: 20,
+                      size: 22,
                     ),
                   ),
                 ],
@@ -368,21 +485,55 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
 
   Widget _buildHistorialTab() {
     if (_doctorId == null) {
-      return const Center(child: Text("Cargando información..."));
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.primary),
+      );
     }
 
     return StreamBuilder<List<Analisis>>(
       stream: _analisisController.streamAnalisisDoctor(_doctorId!),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator(color: AppColors.primary));
+          return const Center(
+            child: CircularProgressIndicator(color: AppColors.primary, strokeWidth: 3),
+          );
         }
 
         if (snapshot.hasError) {
           return Center(
-            child: Text(
-              "Error al cargar historial",
-              style: const TextStyle(color: AppColors.error),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.error.withOpacity(0.1),
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.error_outline,
+                    size: 64,
+                    color: AppColors.error,
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  "Error al cargar historial",
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "Intenta recargar la página",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
+                ),
+              ],
             ),
           );
         }
@@ -392,11 +543,34 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Icon(Icons.history, size: 80, color: AppColors.textTertiary.withOpacity(0.5)),
-                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: AppColors.grey100,
+                    shape: BoxShape.circle,
+                  ),
+                  child: const Icon(
+                    Icons.history_rounded,
+                    size: 64,
+                    color: AppColors.textTertiary,
+                  ),
+                ),
+                const SizedBox(height: 20),
                 const Text(
                   "No hay análisis registrados",
-                  style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.w600,
+                    color: AppColors.textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  "Los análisis aparecerán aquí",
+                  style: TextStyle(
+                    fontSize: 14,
+                    color: AppColors.textSecondary,
+                  ),
                 ),
               ],
             ),
@@ -420,53 +594,6 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
     );
   }
 
-  Widget _buildPendientesTab() {
-    if (_doctorId == null) {
-      return const Center(child: Text("Cargando..."));
-    }
-
-    return StreamBuilder<List<Analisis>>(
-      stream: _analisisController
-          .streamAnalisisDoctor(_doctorId!)
-          .map((lista) => lista.where((a) => a.estado != "finalizado").toList()),
-      builder: (context, snapshot) {
-        if (!snapshot.hasData) {
-          return const Center(child: CircularProgressIndicator(color: AppColors.primary));
-        }
-
-        final pendientes = snapshot.data!;
-
-        if (pendientes.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.check_circle, size: 80, color: AppColors.success.withOpacity(0.5)),
-                const SizedBox(height: 16),
-                const Text(
-                  "No hay análisis pendientes",
-                  style: TextStyle(fontSize: 16, color: AppColors.textSecondary),
-                ),
-              ],
-            ),
-          );
-        }
-
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: pendientes.length,
-          itemBuilder: (context, index) {
-            final a = pendientes[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _buildCardAnalisis(a),
-            );
-          },
-        );
-      },
-    );
-  }
-
   Widget _buildCardAnalisis(Analisis analisis) {
     final estadoColor = _getEstadoColor(analisis.estado);
     
@@ -475,16 +602,20 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
       child: Row(
         children: [
           Container(
-            width: 56,
-            height: 56,
+            width: 60,
+            height: 60,
             decoration: BoxDecoration(
-              color: estadoColor.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
+              color: estadoColor.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: estadoColor.withOpacity(0.3),
+                width: 2,
+              ),
             ),
             child: Icon(
-              Icons.medical_services,
+              Icons.medical_services_rounded,
               color: estadoColor,
-              size: 28,
+              size: 30,
             ),
           ),
           const SizedBox(width: 16),
@@ -500,7 +631,7 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
                     color: AppColors.textPrimary,
                   ),
                 ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 8),
                 StatusChip(
                   label: _getEstadoLabel(analisis.estado),
                   color: estadoColor,
@@ -509,9 +640,9 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
             ),
           ),
           const Icon(
-            Icons.chevron_right,
+            Icons.chevron_right_rounded,
             color: AppColors.textSecondary,
-            size: 20,
+            size: 24,
           ),
         ],
       ),
@@ -680,5 +811,12 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
         ],
       ),
     );
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _searchController.dispose();
+    super.dispose();
   }
 }

@@ -440,7 +440,7 @@ class _DoctorEmpresaModuleState extends State<DoctorEmpresaModule> {
       appBar: AppBar(
         title: Text('Doctores de ${widget.empresa.razonSocial}'),
         leading: IconButton(
-          icon: const Icon(Icons.arrow_back),
+          icon: const Icon(Icons.arrow_back, color: Colors.white,),
           onPressed: () => Navigator.pop(context),
         ),
         backgroundColor: Colors.indigo,

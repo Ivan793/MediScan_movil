@@ -114,7 +114,7 @@ class _PacienteFormPageState extends State<PacienteFormPage> {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
-              content: Text('✅ Paciente actualizado correctamente'),
+              content: Text(' Paciente actualizado correctamente'),
               backgroundColor: AppColors.info,
             ),
           );
@@ -126,7 +126,7 @@ class _PacienteFormPageState extends State<PacienteFormPage> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('❌ Error: $e'),
+            content: Text(' Error: $e'),
             backgroundColor: AppColors.error,
           ),
         );
@@ -185,11 +185,12 @@ class _PacienteFormPageState extends State<PacienteFormPage> {
                       child: AppSecondaryButton(
                         text: 'Atrás',
                         onPressed: details.onStepCancel,
-                        icon: Icons.arrow_back,
+                        icon: Icons.arrow_back, 
+                        iconColor: Colors.white,                   
                       ),
                     ),
                   ],
-                ],
+                ], 
               ),
             );
           },

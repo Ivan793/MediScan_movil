@@ -43,6 +43,7 @@ class AppPrimaryButton extends StatelessWidget {
   final VoidCallback? onPressed;
   final bool isLoading;
   final IconData? icon;
+  final Color? iconColor;
   
   const AppPrimaryButton({
     Key? key,
@@ -50,6 +51,7 @@ class AppPrimaryButton extends StatelessWidget {
     this.onPressed,
     this.isLoading = false,
     this.icon,
+    this.iconColor,
   }) : super(key: key);
 
   @override
@@ -81,7 +83,11 @@ class AppPrimaryButton extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   if (icon != null) ...[
-                    Icon(icon, size: 20),
+                    Icon(
+                      icon,
+                      size: 20,
+                      color: iconColor ?? AppColors.primary, 
+                    ),
                     const SizedBox(width: 8),
                   ],
                   Text(
@@ -104,12 +110,14 @@ class AppSecondaryButton extends StatelessWidget {
   final String text;
   final VoidCallback? onPressed;
   final IconData? icon;
+  final Color? iconColor;
   
   const AppSecondaryButton({
     Key? key,
     required this.text,
     this.onPressed,
     this.icon,
+    this.iconColor,
   }) : super(key: key);
 
   @override
