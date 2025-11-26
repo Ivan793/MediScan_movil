@@ -186,11 +186,11 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
 
                 const SizedBox(height: 24),
 
-                // Módulos rápidos
+                // Módulo de Doctores
                 const Padding(
                   padding: EdgeInsets.only(left: 4, bottom: 12),
                   child: Text(
-                    "Módulos Rápidos",
+                    "Gestión",
                     style: TextStyle(
                       fontSize: 20,
                       fontWeight: FontWeight.bold,
@@ -199,76 +199,17 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
                   ),
                 ),
 
-                Row(
-                  children: [
-                    Expanded(
-                      child: _moduloCard(
-                        Icons.person_add,
-                        'Doctores',
-                        AppColors.primary,
-                        () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => DoctorEmpresaModule(empresa: empresa!),
-                          ),
-                        ),
-                      ),
+                _moduloCard(
+                  Icons.person_add,
+                  'Doctores',
+                  'Administra los doctores de tu empresa',
+                  AppColors.primary,
+                  () => Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (_) => DoctorEmpresaModule(empresa: empresa!),
                     ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _moduloCard(
-                        Icons.medical_services,
-                        'Servicios',
-                        AppColors.secondary,
-                        () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Módulo en desarrollo'),
-                              backgroundColor: AppColors.info,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
-                ),
-
-                const SizedBox(height: 12),
-
-                Row(
-                  children: [
-                    Expanded(
-                      child: _moduloCard(
-                        Icons.location_city,
-                        'Sedes',
-                        AppColors.warning,
-                        () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Módulo en desarrollo'),
-                              backgroundColor: AppColors.info,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                    const SizedBox(width: 12),
-                    Expanded(
-                      child: _moduloCard(
-                        Icons.bar_chart,
-                        'Reportes',
-                        AppColors.info,
-                        () {
-                          ScaffoldMessenger.of(context).showSnackBar(
-                            const SnackBar(
-                              content: Text('Módulo en desarrollo'),
-                              backgroundColor: AppColors.info,
-                            ),
-                          );
-                        },
-                      ),
-                    ),
-                  ],
+                  ),
                 ),
 
                 const SizedBox(height: 40),
@@ -280,28 +221,53 @@ class _CompanyDashboardState extends State<CompanyDashboard> {
     );
   }
 
-  Widget _moduloCard(IconData icon, String label, Color color, VoidCallback onTap) {
+  Widget _moduloCard(
+    IconData icon,
+    String label,
+    String description,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return AppCard(
       onTap: onTap,
-      child: Column(
+      child: Row(
         children: [
           Container(
             padding: const EdgeInsets.all(16),
             decoration: BoxDecoration(
               color: color.withOpacity(0.1),
-              shape: BoxShape.circle,
+              borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(icon, color: color, size: 32),
           ),
-          const SizedBox(height: 12),
-          Text(
-            label,
-            style: TextStyle(
-              color: color,
-              fontWeight: FontWeight.w600,
-              fontSize: 15,
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: TextStyle(
+                    color: color,
+                    fontWeight: FontWeight.bold,
+                    fontSize: 16,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  description,
+                  style: const TextStyle(
+                    color: AppColors.textSecondary,
+                    fontSize: 13,
+                  ),
+                ),
+              ],
             ),
-            textAlign: TextAlign.center,
+          ),
+          Icon(
+            Icons.arrow_forward_ios,
+            color: color.withOpacity(0.5),
+            size: 18,
           ),
         ],
       ),

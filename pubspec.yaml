@@ -20,6 +20,7 @@ dependencies:
   getwidget: ^7.0.0
   get: ^4.6.6
   http: ^1.2.1   # <---- AGREGADO
+  intl: ^0.18.0
 
 dev_dependencies:
   flutter_test:

@@ -364,7 +364,7 @@ class _RegisterPageState extends State<RegisterPage> {
         _field('telefono', 'Teléfono *', Icons.phone, validator: validarTelefono),
         _field('correoContacto', 'Correo de Contacto *', Icons.email, validator: validarCorreoInstitucional),
         campoRegimen(),
-        _field('ips', 'IPS (opcional)', Icons.local_hospital),
+        _field('ips', 'IPS*', Icons.local_hospital),
         
         _sectionHeader('Credenciales de Acceso', Icons.lock_outline),
         _field('correo', 'Correo Usuario *', Icons.email, validator: validarCorreo),

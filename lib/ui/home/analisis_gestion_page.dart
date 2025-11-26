@@ -6,6 +6,7 @@ import 'package:mediscan_app/models/paciente_model.dart';
 import 'package:mediscan_app/models/analisis_model.dart';
 import 'package:mediscan_app/ui/theme/app_colors.dart';
 import 'package:mediscan_app/ui/widgets/app_widgets.dart';
+import 'package:intl/intl.dart';
 
 class AnalisisGestionPage extends StatefulWidget {
   const AnalisisGestionPage({Key? key}) : super(key: key);
@@ -21,11 +22,19 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
   final PacienteController _pacienteController = PacienteController();
   final AnalisisController _analisisController = AnalisisController();
   final TextEditingController _searchController = TextEditingController();
+  final TextEditingController _searchHistorialController = TextEditingController();
 
   List<Paciente> _pacientes = [];
   List<Paciente> _pacientesFiltrados = [];
+  List<Analisis> _todosAnalisis = [];
+  
   bool _isLoading = true;
   String? _doctorId;
+  
+  // Variables de filtro
+  String? _diagnosticoSeleccionado;
+  String _terminoBusquedaActivo = '';
+  List<String> _diagnosticosDisponibles = [];
 
   @override
   void initState() {
@@ -84,6 +93,74 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
     });
   }
 
+  void _actualizarAnalisis(List<Analisis> analisis) {
+    _todosAnalisis = analisis;
+    
+    // Extraer diagnósticos únicos
+    final diagnosticos = analisis
+        .where((a) => a.diagnostico != null && a.diagnostico!.isNotEmpty)
+        .map((a) => a.diagnostico!)
+        .toSet()
+        .toList();
+    diagnosticos.sort();
+    
+    _diagnosticosDisponibles = diagnosticos;
+  }
+
+  List<Analisis> get _analisisFiltrados {
+    final filtrados = _todosAnalisis.where((analisis) {
+      // Filtro por búsqueda de texto (solo si se ha presionado buscar)
+      if (_terminoBusquedaActivo.isNotEmpty) {
+        final searchTerm = _terminoBusquedaActivo.toLowerCase();
+        final nombrePaciente = (analisis.nombrePaciente ?? '').toLowerCase();
+        final diagnostico = (analisis.diagnostico ?? '').toLowerCase();
+        
+        if (!nombrePaciente.contains(searchTerm) && 
+            !diagnostico.contains(searchTerm)) {
+          return false;
+        }
+      }
+      
+      // Filtro por diagnóstico
+      if (_diagnosticoSeleccionado != null && 
+          _diagnosticoSeleccionado != 'Todos') {
+        if (analisis.diagnostico != _diagnosticoSeleccionado) {
+          return false;
+        }
+      }
+      
+      return true;
+    }).toList();
+    
+    // Ordenar por fecha más reciente primero
+    filtrados.sort((a, b) {
+      if (a.fechaAnalisis == null) return 1;
+      if (b.fechaAnalisis == null) return -1;
+      return b.fechaAnalisis!.compareTo(a.fechaAnalisis!);
+    });
+    
+    return filtrados;
+  }
+
+  void _aplicarBusqueda() {
+    setState(() {
+      _terminoBusquedaActivo = _searchHistorialController.text;
+    });
+  }
+
+  void _aplicarFiltros() {
+    setState(() {});
+  }
+
+  void _limpiarFiltros() {
+    setState(() {
+      _diagnosticoSeleccionado = null;
+      _searchHistorialController.clear();
+      _terminoBusquedaActivo = '';
+    });
+    _aplicarFiltros();
+  }
+
   void _seleccionarPaciente(Paciente paciente) {
     Navigator.pushNamed(context, '/nuevo-analisis', arguments: paciente);
   }
@@ -108,6 +185,31 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
       default:
         return estado;
     }
+  }
+
+  String _formatearFecha(DateTime? fecha) {
+    if (fecha == null) return 'Fecha desconocida';
+    
+    final ahora = DateTime.now();
+    final diferencia = ahora.difference(fecha);
+    
+    if (diferencia.inDays == 0) {
+      return 'Hoy ${DateFormat('HH:mm').format(fecha)}';
+    }
+    
+    if (diferencia.inDays == 1) {
+      return 'Ayer ${DateFormat('HH:mm').format(fecha)}';
+    }
+    
+    if (diferencia.inDays < 7) {
+      return '${diferencia.inDays} días atrás';
+    }
+    
+    if (fecha.year == ahora.year) {
+      return DateFormat('d MMM, HH:mm', 'es').format(fecha);
+    }
+    
+    return DateFormat('d MMM yyyy', 'es').format(fecha);
   }
 
   @override
@@ -577,20 +679,389 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
           );
         }
 
-        final analisis = snapshot.data!;
+        // Actualizar análisis sin setState
+        _actualizarAnalisis(snapshot.data!);
 
-        return ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: analisis.length,
-          itemBuilder: (context, index) {
-            final a = analisis[index];
-            return Padding(
-              padding: const EdgeInsets.only(bottom: 12),
-              child: _buildCardAnalisis(a),
-            );
-          },
+        final analisisMostrar = _analisisFiltrados;
+        return Column(
+          children: [
+            // Barra de búsqueda y filtros
+            _buildFiltrosHistorial(),
+            
+            // Lista de análisis filtrados
+            Expanded(
+              child: analisisMostrar.isEmpty
+                  ? _buildEstadoVacioFiltrado()
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: analisisMostrar.length,
+                      itemBuilder: (context, index) {
+                        final a = analisisMostrar[index];
+                        return Padding(
+                          padding: const EdgeInsets.only(bottom: 12),
+                          child: _buildCardAnalisis(a),
+                        );
+                      },
+                    ),
+            ),
+          ],
         );
       },
+    );
+  }
+
+  Widget _buildFiltrosHistorial() {
+    final hayFiltrosActivos = _diagnosticoSeleccionado != null || 
+                              _terminoBusquedaActivo.isNotEmpty;
+
+    return Container(
+      color: AppColors.surface,
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Barra de búsqueda con botón
+          Row(
+            children: [
+              Expanded(
+                child: TextField(
+                  controller: _searchHistorialController,
+                  onSubmitted: (_) => _aplicarBusqueda(),
+                  decoration: InputDecoration(
+                    hintText: 'Buscar por paciente o diagnóstico...',
+                    hintStyle: const TextStyle(color: AppColors.textTertiary, fontSize: 14),
+                    prefixIcon: const Icon(Icons.search, color: AppColors.primary, size: 22),
+                    suffixIcon: _searchHistorialController.text.isNotEmpty
+                        ? IconButton(
+                            icon: const Icon(Icons.clear, size: 20, color: AppColors.textSecondary),
+                            onPressed: () {
+                              _searchHistorialController.clear();
+                              setState(() {
+                                _terminoBusquedaActivo = '';
+                              });
+                            },
+                          )
+                        : null,
+                    filled: true,
+                    fillColor: Colors.white,
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.grey200, width: 1),
+                    ),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: const BorderSide(color: AppColors.primary, width: 2),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              ElevatedButton(
+                onPressed: _aplicarBusqueda,
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: 2,
+                ),
+                child: const Text(
+                  'Buscar',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          const SizedBox(height: 12),
+          
+          // Chips de filtros
+          Row(
+            children: [
+              Expanded(
+                child: SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: Row(
+                    children: [
+                      // Filtro por diagnóstico
+                      _buildFilterChip(
+                        label: _diagnosticoSeleccionado ?? 'Diagnóstico',
+                        icon: Icons.medical_information,
+                        isSelected: _diagnosticoSeleccionado != null,
+                        onTap: _mostrarFiltroDiagnostico,
+                      ),
+                      
+                      // Botón limpiar filtros
+                      if (hayFiltrosActivos) ...[
+                        const SizedBox(width: 8),
+                        InkWell(
+                          onTap: _limpiarFiltros,
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                            decoration: BoxDecoration(
+                              color: AppColors.error.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: AppColors.error.withOpacity(0.3)),
+                            ),
+                            child: Row(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.clear_all, size: 16, color: AppColors.error),
+                                const SizedBox(width: 4),
+                                Text(
+                                  'Limpiar',
+                                  style: TextStyle(
+                                    color: AppColors.error,
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+          
+          // Contador de resultados
+          if (_todosAnalisis.isNotEmpty) ...[
+            const SizedBox(height: 12),
+            Text(
+              '${_analisisFiltrados.length} de ${_todosAnalisis.length} ${_analisisFiltrados.length == 1 ? "análisis" : "análisis"}',
+              style: const TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required IconData icon,
+    required bool isSelected,
+    required VoidCallback onTap,
+  }) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: isSelected 
+              ? AppColors.primary.withOpacity(0.1)
+              : AppColors.grey100,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(
+            color: isSelected 
+                ? AppColors.primary 
+                : AppColors.grey300,
+            width: 1.5,
+          ),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(
+              icon, 
+              size: 16,
+              color: isSelected ? AppColors.primary : AppColors.textSecondary,
+            ),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                color: isSelected ? AppColors.primary : AppColors.textSecondary,
+                fontSize: 13,
+                fontWeight: isSelected ? FontWeight.w600 : FontWeight.w500,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  void _mostrarFiltroDiagnostico() {
+    showModalBottomSheet(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (context) {
+        return Container(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(
+                      Icons.medical_information,
+                      color: AppColors.primary,
+                      size: 20,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Filtrar por Diagnóstico',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: AppColors.textPrimary,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              
+              // Opción "Todos"
+              ListTile(
+                leading: Radio<String?>(
+                  value: null,
+                  groupValue: _diagnosticoSeleccionado,
+                  onChanged: (value) {
+                    setState(() {
+                      _diagnosticoSeleccionado = value;
+                    });
+                    _aplicarFiltros();
+                    Navigator.pop(context);
+                  },
+                  activeColor: AppColors.primary,
+                ),
+                title: const Text(
+                  'Todos los diagnósticos',
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+                onTap: () {
+                  setState(() {
+                    _diagnosticoSeleccionado = null;
+                  });
+                  _aplicarFiltros();
+                  Navigator.pop(context);
+                },
+              ),
+              
+              const Divider(),
+              
+              // Lista de diagnósticos disponibles
+              if (_diagnosticosDisponibles.isEmpty)
+                const Padding(
+                  padding: EdgeInsets.all(16),
+                  child: Text(
+                    'No hay diagnósticos disponibles',
+                    style: TextStyle(
+                      color: AppColors.textSecondary,
+                      fontStyle: FontStyle.italic,
+                    ),
+                  ),
+                )
+              else
+                ...(_diagnosticosDisponibles.map((diagnostico) {
+                  return ListTile(
+                    leading: Radio<String>(
+                      value: diagnostico,
+                      groupValue: _diagnosticoSeleccionado,
+                      onChanged: (value) {
+                        setState(() {
+                          _diagnosticoSeleccionado = value;
+                        });
+                        _aplicarFiltros();
+                        Navigator.pop(context);
+                      },
+                      activeColor: AppColors.primary,
+                    ),
+                    title: Text(diagnostico),
+                    onTap: () {
+                      setState(() {
+                        _diagnosticoSeleccionado = diagnostico;
+                      });
+                      _aplicarFiltros();
+                      Navigator.pop(context);
+                    },
+                  );
+                }).toList()),
+              
+              const SizedBox(height: 10),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildEstadoVacioFiltrado() {
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Container(
+            padding: const EdgeInsets.all(20),
+            decoration: BoxDecoration(
+              color: AppColors.grey100,
+              shape: BoxShape.circle,
+            ),
+            child: const Icon(
+              Icons.filter_alt_off,
+              size: 64,
+              color: AppColors.textTertiary,
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            "No se encontraron análisis",
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              color: AppColors.textPrimary,
+            ),
+          ),
+          const SizedBox(height: 8),
+          const Text(
+            "Intenta ajustar los filtros",
+            style: TextStyle(
+              fontSize: 14,
+              color: AppColors.textSecondary,
+            ),
+          ),
+          const SizedBox(height: 20),
+          TextButton.icon(
+            onPressed: _limpiarFiltros,
+            icon: const Icon(Icons.clear_all, size: 18),
+            label: const Text('Limpiar filtros'),
+            style: TextButton.styleFrom(
+              foregroundColor: AppColors.primary,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -630,6 +1101,49 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
                     fontSize: 16,
                     color: AppColors.textPrimary,
                   ),
+                ),
+                const SizedBox(height: 6),
+                if (analisis.diagnostico != null) ...[
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.medical_information,
+                        size: 14,
+                        color: AppColors.info,
+                      ),
+                      const SizedBox(width: 4),
+                      Expanded(
+                        child: Text(
+                          analisis.diagnostico!,
+                          style: const TextStyle(
+                            color: AppColors.info,
+                            fontSize: 13,
+                            fontWeight: FontWeight.w500,
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                ],
+                Row(
+                  children: [
+                    Icon(
+                      Icons.access_time,
+                      size: 14,
+                      color: AppColors.textSecondary,
+                    ),
+                    const SizedBox(width: 4),
+                    Text(
+                      _formatearFecha(analisis.fechaAnalisis),
+                      style: const TextStyle(
+                        color: AppColors.textSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                  ],
                 ),
                 const SizedBox(height: 8),
                 StatusChip(
@@ -694,6 +1208,25 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
                             fontWeight: FontWeight.bold,
                             color: AppColors.textPrimary,
                           ),
+                        ),
+                        const SizedBox(height: 8),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          children: [
+                            Icon(
+                              Icons.calendar_today,
+                              size: 16,
+                              color: AppColors.textSecondary,
+                            ),
+                            const SizedBox(width: 6),
+                            Text(
+                              _formatearFecha(a.fechaCreacion),
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: AppColors.textSecondary,
+                              ),
+                            ),
+                          ],
                         ),
                         const SizedBox(height: 8),
                         StatusChip(
@@ -817,6 +1350,7 @@ class _AnalisisGestionPageState extends State<AnalisisGestionPage>
   void dispose() {
     _tabController.dispose();
     _searchController.dispose();
+    _searchHistorialController.dispose();
     super.dispose();
   }
 }
